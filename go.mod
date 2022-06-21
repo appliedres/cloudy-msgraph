@@ -1,4 +1,4 @@
-module github.com/appliedres/cloudy/azure
+module github.com/appliedres/cloudy-msgraph
 
 go 1.18
 
