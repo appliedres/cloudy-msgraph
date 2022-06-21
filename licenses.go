@@ -17,7 +17,7 @@ func (lm *LicenseManager) RemoveLicense(ctx context.Context, userId string, lice
 }
 
 func (lm *LicenseManager) GetLicenses(ctx context.Context, userId string, licenseSku string) ([]string, error) {
-	
+	return nil, nil
 }
 
 func (lm *LicenseManager) GetAssigned(ctx context.Context, licenseSku string) ([]string, error) {

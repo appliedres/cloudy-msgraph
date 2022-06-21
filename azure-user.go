@@ -59,11 +59,19 @@ var AzurePublic = MSGraphInstance{
 }
 
 func init() {
-	cloudy.UserProviders.Register("azure", func(cfg interface{}) (cloudy.Users, error) {
-		azum := &AzureUserManager{}
-		err := azum.Configure(cfg)
-		return azum, err
-	})
+	cloudy.UserProviders.Register("azure", &MsGraphUserManagerFactory{})
+}
+
+type MsGraphUserManagerFactory struct{}
+
+func (ms *MsGraphUserManagerFactory) Create(cfg interface{}) (cloudy.UserManager, error) {
+	azum := &AzureUserManager{}
+	err := azum.Configure(cfg)
+	return azum, err
+}
+
+func (ms *MsGraphUserManagerFactory) ToConfig(config map[string]interface{}) (interface{}, error) {
+	return nil, nil
 }
 
 type AzureUserManager struct {
@@ -84,10 +92,10 @@ type AzureUserConfig struct {
 
 func (azcfg *AzureUserConfig) SetInstanceName(name string) error {
 	if strings.EqualFold(name, USGovernment.Name) {
-		azcfg.SetInstance(USGovernment)
+		azcfg.SetInstance(&USGovernment)
 		return nil
 	} else if strings.EqualFold(name, AzurePublic.Name) {
-		azfcg.SetInstance(AzurePublic)
+		azcfg.SetInstance(&AzurePublic)
 		return nil
 	}
 
@@ -140,6 +148,7 @@ func (azum *AzureUserManager) Configure(cfg interface{}) error {
 	azum.Cfg = &azCfg
 	azum.Adapter = adapter
 	azum.Client = msgraphsdk.NewGraphServiceClient(adapter)
+	return nil
 }
 
 func cfgFromMap(cfgMap map[string]interface{}) *AzureUserConfig {
@@ -175,7 +184,7 @@ func (azum *AzureUserManager) ToAzure(user *cloudymodels.User) *models.User {
 
 	//TODO : Finish
 	if user.UserName != "" {
-		u.UserName = &user.UserName
+		u.SetUserPrincipalName(&user.UserName)
 	}
 
 	return u
@@ -212,47 +221,62 @@ func (azum *AzureUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 
 	body := azum.ToAzure(newUser)
 
-	user, err := graph.Client.Users().Post(body)
+	user, err := azum.Client.Users().Post(body)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return newUser, nil
+
+	created := azum.ToCloudy(user)
+	return created, nil
 }
 
-func (azum *AzureUserManager) GetUser(ctx context.Context, uid string) (*models.User, error) {
+func (azum *AzureUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
 	return nil, nil
 }
 
-func (azum *AzureUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*models.User, interface{}, error) {
+func (azum *AzureUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*cloudymodels.User, interface{}, error) {
 	return nil, nil, nil
 }
 
-func (azum *AzureUserManager) UpdateUser(ctx context.Context, usr *models.User) (bool, error) {
-	return false, nil
+func (azum *AzureUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
+	return nil
 }
 
-func (azum *AzureUserManager) Enable(ctx context.Context, uid string) (bool, error) {
-	return false, nil
+func (azum *AzureUserManager) Enable(ctx context.Context, uid string) error {
+	return nil
 }
 
-func (azum *AzureUserManager) Disable(ctx context.Context, uid string) (bool, error) {
-	return false, nil
+func (azum *AzureUserManager) Disable(ctx context.Context, uid string) error {
+	return nil
 }
 
-func (azum *AzureUserManager) DeleteUser(ctx context.Context, uid string) (bool, error) {
-	return false, nil
+func (azum *AzureUserManager) DeleteUser(ctx context.Context, uid string) error {
+	return nil
 }
 
 /// Other thinsgs that MS Graph can do
 
 func (azum *AzureUserManager) AddRemoveLicenses(ctx context.Context, uid string, skusToAdd []string, skusToRemove []string) error {
-	return false, nil
+	return nil
 }
 
 func (azum *AzureUserManager) SetLicenses(ctx context.Context, uid string, skus []string) error {
 	// Get the user
 
-	licenses := user.Get
+	// licenses := user.Get
 
-	return false, nil
+	return nil
+}
+
+func (azum *AzureUserManager) ForceUserName(ctx context.Context, name string) (string, bool, error) {
+	u, err := azum.GetUser(ctx, name)
+	if err != nil {
+		return name, false, err
+	}
+
+	if u != nil {
+		return name, true, nil
+	}
+
+	return name, false, nil
 }

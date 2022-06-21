@@ -7,8 +7,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	azidentity "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/appliedres/cloudy"
-	mapset "github.com/deckarep/golang-set"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	a "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
@@ -104,48 +102,48 @@ func (graph *MSGraph) GetUserByID(id string) (models.Userable, error) {
 	return result, err
 }
 
-func (graph *MSGraph) SetLicenses(ctx context.Context, userId string, licenseSkus []string) error {
-	u, err := graph.GetUserByID(ctx, userId)
-	if err != nil {
-		return err
-	}
+// func (graph *MSGraph) SetLicenses(ctx context.Context, userId string, licenseSkus []string) error {
+// 	u, err := graph.GetUserByID(userId)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	var licenses []models.AssignedLicenseable
+// 	var licenses []models.AssignedLicenseable
 
-	var toAdd []string
-	var toRemove []string
+// 	var toAdd []string
+// 	var toRemove []string
 
-	assigned := u.GetLicenseAssignmentStates()
-	licenseSet := mapset.NewSet[string](licenseSkus...)
+// 	assigned := u.GetLicenseAssignmentStates()
+// 	licenseSet := mapset.NewSet[string](licenseSkus...)
 
-	for _, lic := range assigned {
-		sku := lic.GetSkuId()
-		// This license is meant to be there. Since we
-		// can only have each sku once remove it
-		if cloudy.ArrayIncludes(licenses, sku) {
-			licenseSet.Remove(sku)
-		} else {
-			toRemove = append(toRemove, sku)
-		}
-	}
-	// Now check the set.. all the remaining need to be added
-	for add := range licenseSet {
-		al := models.NewAssignedLicense()
-		al.SetSkuId(&l)
-		licenses = append(licenses, al)
-	}
+// 	for _, lic := range assigned {
+// 		sku := lic.GetSkuId()
+// 		// This license is meant to be there. Since we
+// 		// can only have each sku once remove it
+// 		if cloudy.ArrayIncludes(licenses, sku) {
+// 			licenseSet.Remove(sku)
+// 		} else {
+// 			toRemove = append(toRemove, sku)
+// 		}
+// 	}
+// 	// Now check the set.. all the remaining need to be added
+// 	for add := range licenseSet {
+// 		al := models.NewAssignedLicense()
+// 		al.SetSkuId(&l)
+// 		licenses = append(licenses, al)
+// 	}
 
-	body := assignlicense.NewAssignLicenseRequestBody()
-	body.SetAddLicenses(licenses)
-	body.SetRemoveLicenses(toRemove)
+// 	body := assignlicense.NewAssignLicenseRequestBody()
+// 	body.SetAddLicenses(licenses)
+// 	body.SetRemoveLicenses(toRemove)
 
-	graph.DebugSerialize(body)
+// 	graph.DebugSerialize(body)
 
-	_, err := graph.Client.UsersById(userId).AssignLicense().Post(body)
-}
+// 	_, err := graph.Client.UsersById(userId).AssignLicense().Post(body)
+// }
 
 func (graph *MSGraph) AssignLicenses(ctx context.Context, userId string, licenseSkus ...string) error {
-	body := assignlicense.NewAssignLicenseRequestBody()
+	body := &assignlicense.AssignLicensePostRequestBody{}
 
 	var licenses []models.AssignedLicenseable
 	for _, l := range licenseSkus {
@@ -165,8 +163,7 @@ func (graph *MSGraph) AssignLicenses(ctx context.Context, userId string, license
 }
 
 func (graph *MSGraph) RemoveLicenses(ctx context.Context, userId string, licenseSkus ...string) error {
-	body := assignlicense.NewAssignLicenseRequestBody()
-
+	body := &assignlicense.AssignLicensePostRequestBody{}
 	body.SetAddLicenses([]models.AssignedLicenseable{})
 	body.SetRemoveLicenses(licenseSkus)
 	_, err := graph.Client.UsersById(userId).AssignLicense().Post(body)
