@@ -1,4 +1,4 @@
-package azure
+package cloudymsgraph
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
+	a "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 
@@ -17,7 +18,7 @@ import (
 	cloudymodels "github.com/appliedres/cloudy/models"
 )
 
-const InvalidInstanceName = errors.New("invalid instance name")
+var InvalidInstanceName = errors.New("invalid instance name")
 
 const Azure = "azure"
 
