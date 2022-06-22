@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -13,17 +12,18 @@ import (
 	a "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
+	"github.com/microsoftgraph/msgraph-sdk-go/users"
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
+	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
+	"github.com/microsoftgraph/msgraph-sdk-go/users/item"
 )
 
-var InvalidInstanceName = errors.New("invalid instance name")
+var ErrInvalidInstanceName = errors.New("invalid instance name")
 
 const Azure = "azure"
-
-const MSGraphVersionV1 = "v1.0"
-const MSGraphVersionBeta = "beta"
 
 var DefaultUserSelectFields = []string{
 	"businessPhones",
@@ -38,24 +38,6 @@ var DefaultUserSelectFields = []string{
 	"userPrincipalName",
 	"assignedLicenses",
 	"companyName",
-}
-
-type MSGraphInstance struct {
-	Name  string
-	Login string
-	Base  string
-}
-
-var USGovernment = MSGraphInstance{
-	Name:  "USGovernment",
-	Login: "https://login.microsoftonline.us/",
-	Base:  "https://graph.microsoft.us/",
-}
-
-var AzurePublic = MSGraphInstance{
-	Name:  "Public",
-	Login: "https://login.microsoftonline.com/",
-	Base:  "https://graph.microsoft.com/",
 }
 
 func init() {
@@ -77,38 +59,18 @@ func (ms *MsGraphUserManagerFactory) ToConfig(config map[string]interface{}) (in
 type AzureUserManager struct {
 	Client  *msgraphsdk.GraphServiceClient
 	Adapter *msgraphsdk.GraphRequestAdapter
-	Cfg     *AzureUserConfig
+	Cfg     *MSGraphConfig
 }
 
-type AzureUserConfig struct {
-	TenantID     string
-	ClientID     string
-	ClientSecret string
-	Region       string
-	APIBase      string
-	Version      string
-	SelectFields []string
-}
+func NewMsGraphUserManager(ctx context.Context, cfg *MSGraphConfig) (*AzureUserManager, error) {
+	azum := &AzureUserManager{}
+	err := azum.Configure(cfg)
 
-func (azcfg *AzureUserConfig) SetInstanceName(name string) error {
-	if strings.EqualFold(name, USGovernment.Name) {
-		azcfg.SetInstance(&USGovernment)
-		return nil
-	} else if strings.EqualFold(name, AzurePublic.Name) {
-		azcfg.SetInstance(&AzurePublic)
-		return nil
-	}
-
-	return InvalidInstanceName
-}
-
-func (azcfg *AzureUserConfig) SetInstance(instance *MSGraphInstance) {
-	azcfg.APIBase = instance.Base
-	azcfg.Region = instance.Login
+	return azum, err
 }
 
 func (azum *AzureUserManager) Configure(cfg interface{}) error {
-	azCfg := cfg.(AzureUserConfig)
+	azCfg := cfg.(*MSGraphConfig)
 
 	if azCfg.Version == "" {
 		azCfg.Version = MSGraphVersionV1
@@ -145,14 +107,15 @@ func (azum *AzureUserManager) Configure(cfg interface{}) error {
 	}
 	adapter.SetBaseUrl("https://graph.microsoft.us/v1.0")
 
-	azum.Cfg = &azCfg
+	azum.Cfg = azCfg
 	azum.Adapter = adapter
 	azum.Client = msgraphsdk.NewGraphServiceClient(adapter)
-	return nil
+
+	return err
 }
 
-func cfgFromMap(cfgMap map[string]interface{}) *AzureUserConfig {
-	cfg := &AzureUserConfig{}
+func cfgFromMap(cfgMap map[string]interface{}) *MSGraphConfig {
+	cfg := &MSGraphConfig{}
 
 	cfg.TenantID, _ = cloudy.MapKeyStr(cfgMap, "TenantID", true)
 	cfg.ClientID, _ = cloudy.MapKeyStr(cfgMap, "ClientID", true)
@@ -179,93 +142,176 @@ func (azum *AzureUserManager) DebugSerialize(v serialization.Parsable) {
 	fmt.Println(string(bodyBytes))
 }
 
-func (azum *AzureUserManager) ToAzure(user *cloudymodels.User) *models.User {
+func UserToAzure(user *cloudymodels.User) *models.User {
 	u := models.NewUser()
 
-	//TODO : Finish
-	if user.UserName != "" {
-		u.SetUserPrincipalName(&user.UserName)
+	u.SetUserPrincipalName(&user.UserName)
+	u.SetDisplayName(&user.DisplayName)
+	emailNickname := cloudy.TrimDomain(*u.GetUserPrincipalName())
+
+	u.SetGivenName(&user.FirstName)
+	u.SetSurname(&user.LastName)
+	if user.Company != "" {
+		u.SetCompanyName(&user.Company)
+	}
+	if user.JobTitle != "" {
+		u.SetJobTitle(&user.JobTitle)
+	}
+	u.SetMailNickname(&emailNickname)
+	if user.OfficePhone != "" {
+		u.SetBusinessPhones([]string{user.OfficePhone})
+	}
+	if user.MobilePhone != "" {
+		u.SetMobilePhone(&user.MobilePhone)
+	}
+	if user.Department != "" {
+		u.SetDepartment(&user.Department)
+	}
+	if user.MustChangePassword || user.Password != "" {
+		profile := models.NewPasswordProfile()
+		profile.SetForceChangePasswordNextSignIn(cloudy.BoolP(user.MustChangePassword))
+		profile.SetPassword(&user.Password)
+		u.SetPasswordProfile(profile)
 	}
 
 	return u
 }
 
-func (azum *AzureUserManager) ToCloudy(user models.Userable) *cloudymodels.User {
+func UserToCloudy(user models.Userable) *cloudymodels.User {
 	u := &cloudymodels.User{}
 
+	u.ID = *user.GetId()
 	if user.GetUserPrincipalName() != nil {
 		u.UserName = *user.GetUserPrincipalName()
+	}
+	if user.GetGivenName() != nil {
+		u.FirstName = *user.GetGivenName()
+	}
+	if user.GetSurname() != nil {
+		u.LastName = *user.GetSurname()
+	}
+	if user.GetCompanyName() != nil {
+		u.Company = *user.GetCompanyName()
+	}
+	if user.GetJobTitle() != nil {
+		u.JobTitle = *user.GetJobTitle()
+	}
+	if user.GetDisplayName() != nil {
+		u.DisplayName = *user.GetDisplayName()
+	}
+	if user.GetDepartment() != nil {
+		u.Department = *user.GetDepartment()
+	}
+	if user.GetMobilePhone() != nil {
+		u.MobilePhone = *user.GetMobilePhone()
+	}
+
+	if len(user.GetBusinessPhones()) == 1 {
+		u.OfficePhone = user.GetBusinessPhones()[0]
 	}
 
 	return u
 }
 
 func (azum *AzureUserManager) NewUser(ctx context.Context, newUser *cloudymodels.User) (*cloudymodels.User, error) {
-	// upn := "TESTFIRST.TESTLAST@skyborg.onmicrosoft.us"
-	// profile := models.NewPasswordProfile()
-	// profile.SetForceChangePasswordNextSignIn(boolP(true))
-	// profile.SetPassword(stringP("abcde1234$%#^ASDF"))
 
-	// body := models.NewUser()
-	// body.SetAccountEnabled(boolP(true))
-	// body.SetUserPrincipalName(&upn)
-	// body.SetDisplayName(stringP("TESTFIRST TESTLAST"))
-	// body.SetGivenName(stringP("TESTFIRST"))
-	// body.SetSurname(stringP("TESTLAST"))
-	// body.SetCompanyName(stringP("TESTCOMPANY"))
-	// body.SetJobTitle(stringP("TESTJOBTITLE"))
-	// body.SetMailNickname(stringP("TESTFIRST.TESTLAST"))
-	// body.SetPasswordProfile(profile)
-	// body.SetBusinessPhones([]string{"+1 937-111-1111"})
-	// body.SetMobilePhone(stringP("+1 937-111-1111"))
-
-	body := azum.ToAzure(newUser)
+	body := UserToAzure(newUser)
+	body.SetAccountEnabled(cloudy.BoolP(true))
 
 	user, err := azum.Client.Users().Post(body)
 	if err != nil {
 		return nil, err
 	}
 
-	created := azum.ToCloudy(user)
+	created := UserToCloudy(user)
 	return created, nil
 }
 
 func (azum *AzureUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
-	return nil, nil
+	fields := DefaultUserSelectFields
+
+	requestCfg := &item.UserItemRequestBuilderGetRequestConfiguration{
+		QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
+			Select: fields,
+		},
+	}
+
+	result, err := azum.Client.UsersById(uid).GetWithRequestConfigurationAndResponseHandler(requestCfg, nil)
+	if err != nil {
+		oerr := err.(*odataerrors.ODataError)
+		code := *oerr.GetError().GetCode()
+
+		if code == "Request_ResourceNotFound" {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+	return UserToCloudy(result), nil
 }
 
 func (azum *AzureUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*cloudymodels.User, interface{}, error) {
-	return nil, nil, nil
+	fields := DefaultUserSelectFields
+
+	result, err := azum.Client.Users().GetWithRequestConfigurationAndResponseHandler(
+		&users.UsersRequestBuilderGetRequestConfiguration{
+			QueryParameters: &users.UsersRequestBuilderGetQueryParameters{
+				Select: fields,
+			},
+		}, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var rtn []*cloudymodels.User
+	pageIterator, err := msgraphcore.NewPageIterator(result, azum.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = pageIterator.Iterate(func(pageItem interface{}) bool {
+		u := pageItem.(models.Userable)
+		rtn = append(rtn, UserToCloudy(u))
+		return true
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// items := result.GetValue()
+	// rtn := make([]*cloudymodels.User, len(items))
+	// for i, u := range items {
+	// 	rtn[i] = UserToCloudy(u)
+	// }
+
+	return rtn, nil, nil
 }
 
 func (azum *AzureUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
-	return nil
+	azUser := UserToAzure(usr)
+
+	_, err := azum.Client.Users().Post(azUser)
+	return err
 }
 
 func (azum *AzureUserManager) Enable(ctx context.Context, uid string) error {
-	return nil
+	u := models.NewUser()
+	u.SetAccountEnabled(cloudy.BoolP(true))
+
+	err := azum.Client.UsersById(uid).Patch(u)
+	return err
 }
 
 func (azum *AzureUserManager) Disable(ctx context.Context, uid string) error {
-	return nil
+	u := models.NewUser()
+	u.SetAccountEnabled(cloudy.BoolP(false))
+	err := azum.Client.UsersById(uid).Patch(u)
+	return err
 }
 
 func (azum *AzureUserManager) DeleteUser(ctx context.Context, uid string) error {
-	return nil
-}
-
-/// Other thinsgs that MS Graph can do
-
-func (azum *AzureUserManager) AddRemoveLicenses(ctx context.Context, uid string, skusToAdd []string, skusToRemove []string) error {
-	return nil
-}
-
-func (azum *AzureUserManager) SetLicenses(ctx context.Context, uid string, skus []string) error {
-	// Get the user
-
-	// licenses := user.Get
-
-	return nil
+	err := azum.Client.UsersById(uid).Delete()
+	return err
 }
 
 func (azum *AzureUserManager) ForceUserName(ctx context.Context, name string) (string, bool, error) {
