@@ -35,7 +35,8 @@ func (ms *MsGraphGroupManagerFactory) Create(cfg interface{}) (cloudy.GroupManag
 }
 
 func (ms *MsGraphGroupManagerFactory) ToConfig(config map[string]interface{}) (interface{}, error) {
-	return nil, nil
+	cfg := cfgFromMap(config)
+	return cfg, nil
 }
 
 type MSGraphGroupManager struct {

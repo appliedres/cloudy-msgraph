@@ -23,7 +23,7 @@ import (
 
 var ErrInvalidInstanceName = errors.New("invalid instance name")
 
-const Azure = "azure"
+const MSGraphName = "msgraph"
 
 var DefaultUserSelectFields = []string{
 	"businessPhones",
@@ -53,7 +53,8 @@ func (ms *MsGraphUserManagerFactory) Create(cfg interface{}) (cloudy.UserManager
 }
 
 func (ms *MsGraphUserManagerFactory) ToConfig(config map[string]interface{}) (interface{}, error) {
-	return nil, nil
+	cfg := cfgFromMap(config)
+	return cfg, nil
 }
 
 type AzureUserManager struct {
