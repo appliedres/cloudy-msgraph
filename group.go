@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	cloudy.GroupProviders.Register("azure", &MsGraphGroupManagerFactory{})
+	cloudy.GroupProviders.Register(MSGraphName, &MsGraphGroupManagerFactory{})
 }
 
 type MsGraphGroupManagerFactory struct {

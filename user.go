@@ -41,7 +41,7 @@ var DefaultUserSelectFields = []string{
 }
 
 func init() {
-	cloudy.UserProviders.Register("azure", &MsGraphUserManagerFactory{})
+	cloudy.UserProviders.Register(MSGraphName, &MsGraphUserManagerFactory{})
 }
 
 type MsGraphUserManagerFactory struct{}
@@ -118,11 +118,11 @@ func (azum *AzureUserManager) Configure(cfg interface{}) error {
 func cfgFromMap(cfgMap map[string]interface{}) *MSGraphConfig {
 	cfg := &MSGraphConfig{}
 
-	cfg.TenantID, _ = cloudy.MapKeyStr(cfgMap, "TenantID", true)
-	cfg.ClientID, _ = cloudy.MapKeyStr(cfgMap, "ClientID", true)
-	cfg.ClientSecret, _ = cloudy.MapKeyStr(cfgMap, "ClientSecret", true)
-	cfg.Region, _ = cloudy.MapKeyStr(cfgMap, "Region", true)
-	cfg.APIBase, _ = cloudy.MapKeyStr(cfgMap, "APIBase", true)
+	cfg.TenantID, _ = cloudy.EnvKeyStr(cfgMap, "TenantID")
+	cfg.ClientID, _ = cloudy.EnvKeyStr(cfgMap, "ClientID")
+	cfg.ClientSecret, _ = cloudy.EnvKeyStr(cfgMap, "ClientSecret")
+	cfg.Region, _ = cloudy.EnvKeyStr(cfgMap, "Region")
+	cfg.APIBase, _ = cloudy.EnvKeyStr(cfgMap, "APIBase")
 
 	return cfg
 }
