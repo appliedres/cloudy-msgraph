@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/license"
 	cloudymodels "github.com/appliedres/cloudy/models"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
@@ -45,8 +46,8 @@ func (ms *MsGraphLicenseManagerFactory) Create(cfg interface{}) (license.License
 	return NewMSGraphLicenseManager(context.Background(), cfg.(*MSGraphConfig))
 }
 
-func (ms *MsGraphLicenseManagerFactory) ToConfig(config map[string]interface{}) (interface{}, error) {
-	cfg := cfgFromMap(config)
+func (ms *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.SegmentedEnvironment) (interface{}, error) {
+	cfg := fromEnvironment(env)
 	return cfg, nil
 }
 

@@ -34,8 +34,8 @@ func (ms *MsGraphGroupManagerFactory) Create(cfg interface{}) (cloudy.GroupManag
 	return NewMSGraphGroupManager(context.Background(), cfg.(*MSGraphConfig))
 }
 
-func (ms *MsGraphGroupManagerFactory) ToConfig(config map[string]interface{}) (interface{}, error) {
-	cfg := cfgFromMap(config)
+func (ms *MsGraphGroupManagerFactory) FromEnv(env *cloudy.SegmentedEnvironment) (interface{}, error) {
+	cfg := fromEnvironment(env)
 	return cfg, nil
 }
 
