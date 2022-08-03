@@ -60,7 +60,10 @@ func (gm *MSGraphGroupManager) ListGroups(ctx context.Context) ([]*models.Group,
 
 // Get all the groups for a single user
 func (gm *MSGraphGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*models.Group, error) {
-	var data getmembergroups.GetMemberGroupsPostRequestBodyable
+
+	data := getmembergroups.NewGetMemberGroupsPostRequestBody()
+	data.SetSecurityEnabledOnly(cloudy.BoolP(false))
+
 	results, err := gm.Client.UsersById(uid).GetMemberGroups().Post(data)
 	if err != nil {
 		return nil, err
