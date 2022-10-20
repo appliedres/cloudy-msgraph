@@ -75,7 +75,7 @@ func (lm *MSGraphLicenseManager) AssignLicense(ctx context.Context, userId strin
 
 	lm.DebugSerialize(body)
 
-	_, err := lm.Client.UsersById(userId).AssignLicense().Post(body)
+	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
 
 	return err
 }
@@ -84,7 +84,7 @@ func (lm *MSGraphLicenseManager) RemoveLicense(ctx context.Context, userId strin
 	body := &assignlicense.AssignLicensePostRequestBody{}
 	body.SetAddLicenses([]models.AssignedLicenseable{})
 	body.SetRemoveLicenses(licenseSkus)
-	_, err := lm.Client.UsersById(userId).AssignLicense().Post(body)
+	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
 
 	return err
 }
@@ -92,13 +92,12 @@ func (lm *MSGraphLicenseManager) RemoveLicense(ctx context.Context, userId strin
 func (lm *MSGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string) ([]*license.LicenseDescription, error) {
 	fields := []string{"assignedLicenses"}
 
-	requestCfg := &item.UserItemRequestBuilderGetRequestConfiguration{
-		QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
-			Select: fields,
-		},
-	}
-
-	result, err := lm.Client.UsersById(uid).GetWithRequestConfigurationAndResponseHandler(requestCfg, nil)
+	result, err := lm.Client.UsersById(uid).Get(ctx,
+		&item.UserItemRequestBuilderGetRequestConfiguration{
+			QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
+				Select: fields,
+			},
+		})
 	if err != nil {
 		oerr := err.(*odataerrors.ODataError)
 		code := *oerr.GetError().GetCode()
@@ -130,13 +129,13 @@ func (lm *MSGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku str
 	filter := fmt.Sprintf("assignedLicenses/any(s:s/skuId eq %v)", licenseSku)
 	fields := DefaultUserSelectFields
 
-	result, err := lm.Client.Users().GetWithRequestConfigurationAndResponseHandler(
+	result, err := lm.Client.Users().Get(ctx,
 		&users.UsersRequestBuilderGetRequestConfiguration{
 			QueryParameters: &users.UsersRequestBuilderGetQueryParameters{
 				Select: fields,
 				Filter: &filter,
 			},
-		}, nil)
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +146,7 @@ func (lm *MSGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku str
 		return nil, err
 	}
 
-	err = pageIterator.Iterate(func(pageItem interface{}) bool {
+	err = pageIterator.Iterate(ctx, func(pageItem interface{}) bool {
 		u := pageItem.(models.Userable)
 		rtn = append(rtn, UserToCloudy(u))
 		return true
@@ -161,7 +160,7 @@ func (lm *MSGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku str
 
 //ListLicenses List all the managed licenses
 func (lm *MSGraphLicenseManager) ListLicenses(ctx context.Context) ([]*license.LicenseDescription, error) {
-	result, err := lm.Client.SubscribedSkus().Get()
+	result, err := lm.Client.SubscribedSkus().Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

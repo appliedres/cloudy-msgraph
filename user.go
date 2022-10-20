@@ -219,7 +219,7 @@ func (azum *AzureUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 	body := UserToAzure(newUser)
 	body.SetAccountEnabled(cloudy.BoolP(true))
 
-	user, err := azum.Client.Users().Post(body)
+	user, err := azum.Client.Users().Post(ctx, body, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -231,13 +231,12 @@ func (azum *AzureUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 func (azum *AzureUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
 	fields := DefaultUserSelectFields
 
-	requestCfg := &item.UserItemRequestBuilderGetRequestConfiguration{
-		QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
-			Select: fields,
-		},
-	}
-
-	result, err := azum.Client.UsersById(uid).GetWithRequestConfigurationAndResponseHandler(requestCfg, nil)
+	result, err := azum.Client.UsersById(uid).Get(ctx,
+		&item.UserItemRequestBuilderGetRequestConfiguration{
+			QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
+				Select: fields,
+			},
+		})
 	if err != nil {
 		oerr := err.(*odataerrors.ODataError)
 		code := *oerr.GetError().GetCode()
@@ -254,12 +253,12 @@ func (azum *AzureUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 func (azum *AzureUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*cloudymodels.User, interface{}, error) {
 	fields := DefaultUserSelectFields
 
-	result, err := azum.Client.Users().GetWithRequestConfigurationAndResponseHandler(
+	result, err := azum.Client.Users().Get(ctx,
 		&users.UsersRequestBuilderGetRequestConfiguration{
 			QueryParameters: &users.UsersRequestBuilderGetQueryParameters{
 				Select: fields,
 			},
-		}, nil)
+		})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -270,7 +269,7 @@ func (azum *AzureUserManager) ListUsers(ctx context.Context, page interface{}, f
 		return nil, nil, err
 	}
 
-	err = pageIterator.Iterate(func(pageItem interface{}) bool {
+	err = pageIterator.Iterate(ctx, func(pageItem interface{}) bool {
 		u := pageItem.(models.Userable)
 		rtn = append(rtn, UserToCloudy(u))
 		return true
@@ -291,7 +290,7 @@ func (azum *AzureUserManager) ListUsers(ctx context.Context, page interface{}, f
 func (azum *AzureUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
 	azUser := UserToAzure(usr)
 
-	_, err := azum.Client.Users().Post(azUser)
+	_, err := azum.Client.Users().Post(ctx, azUser, nil)
 	return err
 }
 
@@ -299,19 +298,19 @@ func (azum *AzureUserManager) Enable(ctx context.Context, uid string) error {
 	u := models.NewUser()
 	u.SetAccountEnabled(cloudy.BoolP(true))
 
-	err := azum.Client.UsersById(uid).Patch(u)
+	_, err := azum.Client.UsersById(uid).Patch(ctx, u, nil)
 	return err
 }
 
 func (azum *AzureUserManager) Disable(ctx context.Context, uid string) error {
 	u := models.NewUser()
 	u.SetAccountEnabled(cloudy.BoolP(false))
-	err := azum.Client.UsersById(uid).Patch(u)
+	_, err := azum.Client.UsersById(uid).Patch(ctx, u, nil)
 	return err
 }
 
 func (azum *AzureUserManager) DeleteUser(ctx context.Context, uid string) error {
-	err := azum.Client.UsersById(uid).Delete()
+	err := azum.Client.UsersById(uid).Delete(ctx, nil)
 	return err
 }
 
