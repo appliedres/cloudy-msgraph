@@ -15,7 +15,6 @@ func TestGroupManager(t *testing.T) {
 	tenantID := cloudy.ForceEnv("TenantID", "")
 	ClientID := cloudy.ForceEnv("ClientID", "")
 	ClientSecret := cloudy.ForceEnv("ClientSecret", "")
-	TestUser := cloudy.ForceEnv("TestUser", "")
 
 	cfg := &MSGraphConfig{
 		TenantID:     tenantID,
@@ -29,6 +28,11 @@ func TestGroupManager(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	testutil.TestGroupManager(t, gm, TestUser)
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+
+	testutil.TestGroupManager(t, gm, um)
 
 }
