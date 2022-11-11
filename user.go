@@ -148,7 +148,9 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 
 	u.SetUserPrincipalName(&user.UserName)
 	u.SetDisplayName(&user.DisplayName)
+
 	emailNickname := cloudy.TrimDomain(*u.GetUserPrincipalName())
+	u.SetMailNickname(&emailNickname)
 
 	u.SetGivenName(&user.FirstName)
 	u.SetSurname(&user.LastName)
@@ -158,7 +160,6 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 	if user.JobTitle != "" {
 		u.SetJobTitle(&user.JobTitle)
 	}
-	u.SetMailNickname(&emailNickname)
 	if user.OfficePhone != "" {
 		u.SetBusinessPhones([]string{user.OfficePhone})
 	}
@@ -290,7 +291,7 @@ func (azum *AzureUserManager) ListUsers(ctx context.Context, page interface{}, f
 func (azum *AzureUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
 	azUser := UserToAzure(usr)
 
-	_, err := azum.Client.Users().Post(ctx, azUser, nil)
+	_, err := azum.Client.UsersById(usr.ID).Patch(ctx, azUser, nil)
 	return err
 }
 
