@@ -145,30 +145,41 @@ func (azum *AzureUserManager) DebugSerialize(v serialization.Parsable) {
 
 func UserToAzure(user *cloudymodels.User) *models.User {
 	u := models.NewUser()
+	u.SetId(&user.ID)
 
 	u.SetUserPrincipalName(&user.UserName)
 	u.SetDisplayName(&user.DisplayName)
 
-	emailNickname := cloudy.TrimDomain(*u.GetUserPrincipalName())
+	emailNickname := cloudy.TrimDomain(user.UserName)
 	u.SetMailNickname(&emailNickname)
+
+	if user.Email != "" {
+		u.SetMail(&user.Email)
+	}
 
 	u.SetGivenName(&user.FirstName)
 	u.SetSurname(&user.LastName)
+
 	if user.Company != "" {
 		u.SetCompanyName(&user.Company)
 	}
+
 	if user.JobTitle != "" {
 		u.SetJobTitle(&user.JobTitle)
 	}
+
 	if user.OfficePhone != "" {
 		u.SetBusinessPhones([]string{user.OfficePhone})
 	}
+
 	if user.MobilePhone != "" {
 		u.SetMobilePhone(&user.MobilePhone)
 	}
+
 	if user.Department != "" {
 		u.SetDepartment(&user.Department)
 	}
+
 	if user.MustChangePassword || user.Password != "" {
 		profile := models.NewPasswordProfile()
 		profile.SetForceChangePasswordNextSignIn(cloudy.BoolP(user.MustChangePassword))
@@ -186,30 +197,51 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 	if user.GetUserPrincipalName() != nil {
 		u.UserName = *user.GetUserPrincipalName()
 	}
+
 	if user.GetGivenName() != nil {
 		u.FirstName = *user.GetGivenName()
 	}
+
 	if user.GetSurname() != nil {
 		u.LastName = *user.GetSurname()
 	}
+
+	if user.GetMail() != nil {
+		u.Email = *user.GetMail()
+	}
+
 	if user.GetCompanyName() != nil {
 		u.Company = *user.GetCompanyName()
 	}
+
 	if user.GetJobTitle() != nil {
 		u.JobTitle = *user.GetJobTitle()
 	}
+
 	if user.GetDisplayName() != nil {
 		u.DisplayName = *user.GetDisplayName()
 	}
+
 	if user.GetDepartment() != nil {
 		u.Department = *user.GetDepartment()
 	}
+
 	if user.GetMobilePhone() != nil {
 		u.MobilePhone = *user.GetMobilePhone()
 	}
 
-	if len(user.GetBusinessPhones()) == 1 {
+	if len(user.GetBusinessPhones()) >= 1 {
 		u.OfficePhone = user.GetBusinessPhones()[0]
+	}
+
+	if user.GetPasswordProfile() != nil {
+		if user.GetPasswordProfile().GetForceChangePasswordNextSignIn() != nil {
+			u.MustChangePassword = *user.GetPasswordProfile().GetForceChangePasswordNextSignIn()
+		}
+
+		if user.GetPasswordProfile().GetPassword() != nil {
+			u.Password = *user.GetPasswordProfile().GetPassword()
+		}
 	}
 
 	return u
