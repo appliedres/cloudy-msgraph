@@ -44,13 +44,14 @@ type MSGraphGroupManager struct {
 
 // List all the groups available
 func (gm *MSGraphGroupManager) ListGroups(ctx context.Context) ([]*models.Group, error) {
-	cloudy.Info(ctx, "Listing Groups")
+	cloudy.Info(ctx, "MSGraphGroupManager Listing Groups")
 	grps, err := gm.Client.Groups().Get(ctx, nil)
 	if err != nil {
+		_ = cloudy.Error(ctx, "MSGraphGroupManager error: %v", err)
 		return nil, err
 	}
 
-	cloudy.Info(ctx, "Creating Group array")
+	cloudy.Info(ctx, "MSGraphGroupManager Creating Group array")
 	groups := grps.GetValue()
 	rtn := make([]*models.Group, len(groups))
 	for i, g := range groups {
