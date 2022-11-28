@@ -46,7 +46,7 @@ func (ms *MsGraphLicenseManagerFactory) Create(cfg interface{}) (license.License
 	return NewMSGraphLicenseManager(context.Background(), cfg.(*MSGraphConfig))
 }
 
-func (ms *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.SegmentedEnvironment) (interface{}, error) {
+func (ms *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
 	cfg := fromEnvironment(env)
 	return cfg, nil
 }
@@ -122,7 +122,7 @@ func (lm *MSGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string
 
 }
 
-//GetAssigned gets a list of all the users with licenses
+// GetAssigned gets a list of all the users with licenses
 // https://graph.microsoft.com/v1.0/users?$filter=assignedLicenses/any(s:s/skuId eq 184efa21-98c3-4e5d-95ab-d07053a96e67)
 // SEE : https://docs.microsoft.com/en-us/graph/query-parameters#filter-parameter
 func (lm *MSGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku string) ([]*cloudymodels.User, error) {
@@ -158,7 +158,7 @@ func (lm *MSGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku str
 	return rtn, nil
 }
 
-//ListLicenses List all the managed licenses
+// ListLicenses List all the managed licenses
 func (lm *MSGraphLicenseManager) ListLicenses(ctx context.Context) ([]*license.LicenseDescription, error) {
 	result, err := lm.Client.SubscribedSkus().Get(ctx, nil)
 	if err != nil {

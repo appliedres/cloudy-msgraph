@@ -52,7 +52,7 @@ func (ms *MsGraphUserManagerFactory) Create(cfg interface{}) (cloudy.UserManager
 	return azum, err
 }
 
-func (ms *MsGraphUserManagerFactory) FromEnv(env *cloudy.SegmentedEnvironment) (interface{}, error) {
+func (ms *MsGraphUserManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
 	cfg := fromEnvironment(env)
 	return cfg, nil
 }
@@ -115,14 +115,14 @@ func (azum *AzureUserManager) Configure(cfg interface{}) error {
 	return err
 }
 
-func fromEnvironment(env *cloudy.SegmentedEnvironment) *MSGraphConfig {
+func fromEnvironment(env *cloudy.Environment) *MSGraphConfig {
 	cfg := &MSGraphConfig{}
 
 	cfg.TenantID = env.Force("AZ_TENANT_ID")
 	cfg.ClientID = env.Force("AZ_CLIENT_ID")
 	cfg.ClientSecret = env.Force("AZ_CLIENT_SECRET")
-	cfg.Region, _ = env.Default("AZ_REGION", "usgovvirginia")
-	cfg.APIBase, _ = env.Default("AZ_API_BASE", "https://graph.microsoft.us/v1.0")
+	cfg.Region = env.Default("AZ_REGION", "usgovvirginia")
+	cfg.APIBase = env.Default("AZ_API_BASE", "https://graph.microsoft.us/v1.0")
 
 	return cfg
 }

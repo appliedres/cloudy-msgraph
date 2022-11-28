@@ -33,7 +33,7 @@ func (ms *MsGraphGroupManagerFactory) Create(cfg interface{}) (cloudy.GroupManag
 	return NewMSGraphGroupManager(context.Background(), cfg.(*MSGraphConfig))
 }
 
-func (ms *MsGraphGroupManagerFactory) FromEnv(env *cloudy.SegmentedEnvironment) (interface{}, error) {
+func (ms *MsGraphGroupManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
 	cfg := fromEnvironment(env)
 	return cfg, nil
 }
