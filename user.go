@@ -93,12 +93,12 @@ func (azum *AzureUserManager) Configure(cfg interface{}) error {
 		})
 
 	if err != nil {
-		fmt.Printf("Error authentication provider: %v\n", err)
+		fmt.Printf("AzureUserManager Configure Error authentication provider: %v\n", err)
 		return err
 	}
 	auth, err := a.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
 	if err != nil {
-		fmt.Printf("Error authentication provider: %v\n", err)
+		fmt.Printf("AzureUserManager Configure Error authentication provider: %v\n", err)
 		return err
 	}
 	adapter, err := msgraphsdk.NewGraphRequestAdapter(auth)

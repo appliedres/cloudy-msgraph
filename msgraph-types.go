@@ -69,7 +69,7 @@ type MSGraph struct {
 }
 
 func (azum *MSGraph) Configure(azCfg *MSGraphConfig) error {
-	if azCfg == nil {
+	if azCfg == nil || azCfg.ClientID == "" {
 		return cloudy.ErrInvalidConfiguration
 	}
 
@@ -93,12 +93,12 @@ func (azum *MSGraph) Configure(azCfg *MSGraphConfig) error {
 		})
 
 	if err != nil {
-		fmt.Printf("Error authentication provider: %v\n", err)
+		fmt.Printf("MSGraph Configure Error authentication provider: %v\n", err)
 		return err
 	}
 	auth, err := a.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
 	if err != nil {
-		fmt.Printf("Error authentication provider: %v\n", err)
+		fmt.Printf("MSGraph Configure Error authentication provider: %v\n", err)
 		return err
 	}
 	adapter, err := msgraphsdk.NewGraphRequestAdapter(auth)
@@ -142,12 +142,12 @@ func NewGraph(ctx context.Context, tenantID string, clientID string, clientSecre
 		})
 
 	if err != nil {
-		fmt.Printf("Error authentication provider: %v\n", err)
+		fmt.Printf("NewGraph Error authentication provider: %v\n", err)
 		return nil, err
 	}
 	auth, err := a.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
 	if err != nil {
-		fmt.Printf("Error authentication provider: %v\n", err)
+		fmt.Printf("NewGraph Error authentication provider: %v\n", err)
 		return nil, err
 	}
 	adapter, err := msgraphsdk.NewGraphRequestAdapter(auth)
