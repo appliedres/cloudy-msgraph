@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -38,6 +39,7 @@ var DefaultUserSelectFields = []string{
 	"userPrincipalName",
 	"assignedLicenses",
 	"companyName",
+	"authorizationInfo",
 }
 
 func init() {
@@ -68,6 +70,12 @@ func NewMsGraphUserManager(ctx context.Context, cfg *MSGraphConfig) (*AzureUserM
 	err := azum.Configure(cfg)
 
 	return azum, err
+}
+
+func NewMsGraphUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) (*AzureUserManager, error) {
+	fact := &MsGraphUserManagerFactory{}
+	cfg, _ := fact.FromEnv(env)
+	return NewMsGraphUserManager(ctx, cfg.(*MSGraphConfig))
 }
 
 func (azum *AzureUserManager) Configure(cfg interface{}) error {
@@ -332,6 +340,41 @@ func (azum *AzureUserManager) Enable(ctx context.Context, uid string) error {
 	u.SetAccountEnabled(cloudy.BoolP(true))
 
 	_, err := azum.Client.UsersById(uid).Patch(ctx, u, nil)
+	return err
+}
+
+// Associates a certificate ID as a second factor authentication
+func (azum *AzureUserManager) AssocateCerificateMFA(ctx context.Context, uid string, certId string, replace bool) error {
+	fields := DefaultUserSelectFields
+
+	if !strings.HasPrefix(certId, "X509:<PN>") {
+		certId = fmt.Sprintf("X509:<PN>%v", certId)
+	}
+
+	azUser, err := azum.Client.UsersById(uid).Get(ctx,
+		&item.UserItemRequestBuilderGetRequestConfiguration{
+			QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
+				Select: fields,
+			},
+		})
+
+	if err != nil {
+		return err
+	}
+
+	info := azUser.GetAuthorizationInfo()
+	certIds := info.GetCertificateUserIds()
+
+	var newCertIds []string
+	if replace {
+		newCertIds = append(newCertIds, certId)
+	} else {
+		newCertIds = append(certIds, certId)
+	}
+
+	info.SetCertificateUserIds(newCertIds)
+
+	_, err = azum.Client.UsersById(uid).Patch(ctx, azUser, nil)
 	return err
 }
 
