@@ -344,6 +344,27 @@ func (azum *AzureUserManager) Enable(ctx context.Context, uid string) error {
 }
 
 // Associates a certificate ID as a second factor authentication
+func (azum *AzureUserManager) GetCertificateMFA(ctx context.Context, uid string) ([]string, error) {
+	fields := DefaultUserSelectFields
+
+	azUser, err := azum.Client.UsersById(uid).Get(ctx,
+		&item.UserItemRequestBuilderGetRequestConfiguration{
+			QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
+				Select: fields,
+			},
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	info := azUser.GetAuthorizationInfo()
+	certIds := info.GetCertificateUserIds()
+
+	return certIds, nil
+}
+
+// Associates a certificate ID as a second factor authentication
 func (azum *AzureUserManager) AssocateCerificateMFA(ctx context.Context, uid string, certId string, replace bool) error {
 	fields := DefaultUserSelectFields
 
