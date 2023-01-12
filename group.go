@@ -135,6 +135,8 @@ func (gm *MSGraphGroupManager) UpdateGroup(ctx context.Context, grp *models.Grou
 // typically just the user id, name and email fields
 func (gm *MSGraphGroupManager) GetGroupMembers(ctx context.Context, grpId string) ([]*models.User, error) {
 
+	cloudy.Info(ctx, "MSGraphGroupManager GetGroupMembers grpId: %s", grpId)
+
 	result, err := gm.Client.GroupsById(grpId).Members().Get(ctx,
 		&members.MembersRequestBuilderGetRequestConfiguration{
 			QueryParameters: &members.MembersRequestBuilderGetQueryParameters{
@@ -148,7 +150,7 @@ func (gm *MSGraphGroupManager) GetGroupMembers(ctx context.Context, grpId string
 			},
 		})
 	if err != nil {
-		return nil, err
+		return nil, cloudy.Error(ctx, "GetGroupMembers (%s) Failed %v", grpId, err)
 	}
 
 	dirObjects := result.GetValue()
