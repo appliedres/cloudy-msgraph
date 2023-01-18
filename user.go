@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	a "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
@@ -20,6 +21,7 @@ import (
 	cloudymodels "github.com/appliedres/cloudy/models"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 	"github.com/microsoftgraph/msgraph-sdk-go/users/item"
+	"github.com/microsoftgraph/msgraph-sdk-go/users/item/photo/value"
 )
 
 var ErrInvalidInstanceName = errors.New("invalid instance name")
@@ -341,6 +343,30 @@ func (azum *AzureUserManager) Enable(ctx context.Context, uid string) error {
 
 	_, err := azum.Client.UsersById(uid).Patch(ctx, u, nil)
 	return err
+}
+
+func (azum *AzureUserManager) UploadProfilePicture(ctx context.Context, uid string, picture []byte) error {
+	u, err := azum.Client.UsersById(uid).Get(ctx, nil)
+	if err != nil {
+		return err
+	}
+	id := *u.GetId()
+
+	return azum.Client.UsersById(id).Photo().Content().Put(ctx, picture, nil)
+}
+
+func (azum *AzureUserManager) GetProfilePicture(ctx context.Context, uid string) ([]byte, error) {
+
+	u, err := azum.Client.UsersById(uid).Get(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	id := *u.GetId()
+
+	photo, err := azum.Client.UsersById(id).Photo().Content().Get(ctx, &value.ContentRequestBuilderGetRequestConfiguration{
+		Options: []abstractions.RequestOption{},
+	})
+	return photo, err
 }
 
 // Associates a certificate ID as a second factor authentication
