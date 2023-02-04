@@ -154,10 +154,15 @@ func (gm *MSGraphGroupManager) GetGroupMembers(ctx context.Context, grpId string
 	}
 
 	dirObjects := result.GetValue()
-	rtn := make([]*models.User, len(dirObjects))
-	for i, obj := range dirObjects {
-		userable := obj.(graphmodels.Userable)
-		rtn[i] = UserToCloudy(userable)
+	rtn := []*models.User{}
+	for _, dirObj := range dirObjects {
+		switch data := dirObj.(type) {
+		case graphmodels.Userable:
+			rtn = append(rtn, UserToCloudy(data))
+			// default:
+			// 	cloudy.Info(ctx, "Non-User directory object: %T", dirObj)
+		}
+
 	}
 
 	return rtn, nil
