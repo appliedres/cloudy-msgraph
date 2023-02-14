@@ -11,14 +11,15 @@ import (
 func TestLicenseManager(t *testing.T) {
 	ctx := cloudy.StartContext()
 
-	testutil.LoadEnv("test.env")
+	_ = testutil.LoadEnv("collider.env")
 	tenantID := cloudy.ForceEnv("TenantID", "")
 	ClientID := cloudy.ForceEnv("ClientID", "")
 	ClientSecret := cloudy.ForceEnv("ClientSecret", "")
+	
 	TestUser := cloudy.ForceEnv("TestUser", "")
 	TestSku := cloudy.ForceEnv("TestSku", "")
 
-	cfg := &MSGraphConfig{
+	cfg := &MsGraphConfig{
 		TenantID:     tenantID,
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,

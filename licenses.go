@@ -7,20 +7,19 @@ import (
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/license"
 	cloudymodels "github.com/appliedres/cloudy/models"
+	"github.com/google/uuid"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
-	"github.com/microsoftgraph/msgraph-sdk-go/users/item"
-	"github.com/microsoftgraph/msgraph-sdk-go/users/item/assignlicense"
 )
 
 func init() {
-	license.LicenseProviders.Register(MSGraphName, &MsGraphLicenseManagerFactory{})
+	license.LicenseProviders.Register(MsGraphName, &MsGraphLicenseManagerFactory{})
 }
 
-type MSGraphLicenseManager struct {
-	*MSGraph
+type MsGraphLicenseManager struct {
+	*MsGraph
 }
 
 var GCCHighTeamsPhone = "985fcb26-7b94-475b-b512-89356697be71"
@@ -30,74 +29,80 @@ var GCCHighOffice365E3 = "aea38a85-9bd5-4981-aa00-616b411205bf"
 var GCCHighProjectPlan3 = "64758d81-92b7-4855-bcac-06617becb3e8"
 
 type MsGraphLicenseManagerFactory struct {
-	MSGraph
+	MsGraph
 }
 
-func NewMSGraphLicenseManager(ctx context.Context, cfg *MSGraphConfig) (*MSGraphLicenseManager, error) {
-	gm := &MSGraphLicenseManager{
-		MSGraph: &MSGraph{},
+func NewMsGraphLicenseManager(ctx context.Context, cfg *MsGraphConfig) (*MsGraphLicenseManager, error) {
+	lm := &MsGraphLicenseManager{
+		MsGraph: &MsGraph{},
 	}
-	err := gm.Configure(cfg)
+	err := lm.Configure(cfg)
 
-	return gm, err
+	return lm, err
 }
 
-func (ms *MsGraphLicenseManagerFactory) Create(cfg interface{}) (license.LicenseManager, error) {
-	return NewMSGraphLicenseManager(context.Background(), cfg.(*MSGraphConfig))
+func (lm *MsGraphLicenseManagerFactory) Create(cfg interface{}) (license.LicenseManager, error) {
+	return NewMsGraphLicenseManager(context.Background(), cfg.(*MsGraphConfig))
 }
 
-func (ms *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
+func (lm *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
 	cfg := fromEnvironment(env)
 	return cfg, nil
 }
 
-func NewMsGraphLicenseManager(ctx context.Context, cfg *MSGraphConfig) (*MSGraphLicenseManager, error) {
-	gm := &MSGraphLicenseManager{
-		MSGraph: &MSGraph{},
-	}
-	err := gm.Configure(cfg)
+func (lm *MsGraphLicenseManager) AssignLicense(ctx context.Context, userId string, licenseSkus ...string) error {
+	body := users.NewItemMicrosoftGraphAssignLicenseAssignLicensePostRequestBody()
 
-	return gm, err
-}
+	assignedLicenses := []models.AssignedLicenseable{}
+	for _, sku := range licenseSkus {
+		skuId, err := uuid.Parse(sku)
+		if err != nil {
+			return cloudy.Error(ctx, "AssignLicense Invalid license: %s %v", sku, err)
+		}
 
-func (lm *MSGraphLicenseManager) AssignLicense(ctx context.Context, userId string, licenseSkus ...string) error {
-	body := &assignlicense.AssignLicensePostRequestBody{}
-
-	var licenses []models.AssignedLicenseable
-	for _, l := range licenseSkus {
-		al := models.NewAssignedLicense()
-		al.SetSkuId(&l)
-		licenses = append(licenses, al)
+		assignedLicense := models.NewAssignedLicense()
+		assignedLicense.SetSkuId(&skuId)
+		assignedLicenses = append(assignedLicenses, assignedLicense)
 	}
 
-	body.SetAddLicenses(licenses)
-	body.SetRemoveLicenses([]string{})
+	body.SetAddLicenses(assignedLicenses)
+	body.SetRemoveLicenses([]uuid.UUID{})
 
-	lm.DebugSerialize(body)
-
-	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
+	_, err := lm.Client.UsersById(userId).MicrosoftGraphAssignLicense().Post(ctx, body, nil)
 
 	return err
 }
 
-func (lm *MSGraphLicenseManager) RemoveLicense(ctx context.Context, userId string, licenseSkus ...string) error {
-	body := &assignlicense.AssignLicensePostRequestBody{}
+func (lm *MsGraphLicenseManager) RemoveLicense(ctx context.Context, userId string, licenseSkus ...string) error {
+	body := users.NewItemMicrosoftGraphAssignLicenseAssignLicensePostRequestBody()
+
 	body.SetAddLicenses([]models.AssignedLicenseable{})
-	body.SetRemoveLicenses(licenseSkus)
-	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
+
+	removedLicenses := []uuid.UUID{}
+	for _, sku := range licenseSkus {
+		skuId, err := uuid.Parse(sku)
+		if err != nil {
+			return cloudy.Error(ctx, "RemoveLicense Invalid license: %s %v", sku, err)
+		}
+
+		removedLicenses = append(removedLicenses, skuId)
+	}
+
+	body.SetRemoveLicenses(removedLicenses)
+
+	_, err := lm.Client.UsersById(userId).MicrosoftGraphAssignLicense().Post(ctx, body, nil)
 
 	return err
 }
 
-func (lm *MSGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string) ([]*license.LicenseDescription, error) {
-	fields := []string{"assignedLicenses"}
-
+func (lm *MsGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string) ([]*license.LicenseDescription, error) {
 	result, err := lm.Client.UsersById(uid).Get(ctx,
-		&item.UserItemRequestBuilderGetRequestConfiguration{
-			QueryParameters: &item.UserItemRequestBuilderGetQueryParameters{
-				Select: fields,
+		&users.UserItemRequestBuilderGetRequestConfiguration{
+			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
+				Select: []string{"assignedLicenses"},
 			},
 		})
+
 	if err != nil {
 		oerr := err.(*odataerrors.ODataError)
 		code := *oerr.GetError().GetCode()
@@ -109,13 +114,12 @@ func (lm *MSGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string
 		return nil, err
 	}
 
-	assigned := result.GetAssignedLicenses()
-	rtn := make([]*license.LicenseDescription, len(assigned))
-
-	for i, l := range assigned {
-		rtn[i] = &license.LicenseDescription{
-			SKU: *l.GetSkuId(),
-		}
+	rtn := []*license.LicenseDescription{}
+	for _, l := range result.GetAssignedLicenses() {
+		rtn = append(rtn,
+			&license.LicenseDescription{
+				SKU: l.GetSkuId().String(),
+			})
 	}
 
 	return rtn, nil
@@ -125,7 +129,7 @@ func (lm *MSGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string
 // GetAssigned gets a list of all the users with licenses
 // https://graph.microsoft.com/v1.0/users?$filter=assignedLicenses/any(s:s/skuId eq 184efa21-98c3-4e5d-95ab-d07053a96e67)
 // SEE : https://docs.microsoft.com/en-us/graph/query-parameters#filter-parameter
-func (lm *MSGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku string) ([]*cloudymodels.User, error) {
+func (lm *MsGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku string) ([]*cloudymodels.User, error) {
 	filter := fmt.Sprintf("assignedLicenses/any(s:s/skuId eq %v)", licenseSku)
 	fields := DefaultUserSelectFields
 
@@ -159,7 +163,7 @@ func (lm *MSGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku str
 }
 
 // ListLicenses List all the managed licenses
-func (lm *MSGraphLicenseManager) ListLicenses(ctx context.Context) ([]*license.LicenseDescription, error) {
+func (lm *MsGraphLicenseManager) ListLicenses(ctx context.Context) ([]*license.LicenseDescription, error) {
 	result, err := lm.Client.SubscribedSkus().Get(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -180,7 +184,7 @@ func (lm *MSGraphLicenseManager) ListLicenses(ctx context.Context) ([]*license.L
 
 		rtn[i] = &license.LicenseDescription{
 			ID:       *lic.GetId(),
-			SKU:      *lic.GetSkuId(),
+			SKU:      lic.GetSkuId().String(),
 			Name:     *lic.GetSkuPartNumber(),
 			Assigned: int(used),
 			Total:    int(cnt),

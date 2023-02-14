@@ -16,14 +16,43 @@ func TestGroupManager(t *testing.T) {
 	ClientID := cloudy.ForceEnv("ClientID", "")
 	ClientSecret := cloudy.ForceEnv("ClientSecret", "")
 
-	cfg := &MSGraphConfig{
+	cfg := &MsGraphConfig{
 		TenantID:     tenantID,
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,
 	}
 	cfg.SetInstance(&USGovernment)
 
-	gm, err := NewMSGraphGroupManager(ctx, cfg)
+	gm, err := NewMsGraphGroupManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+
+	testutil.TestGroupManager(t, gm, um)
+
+}
+
+func TestListGroups(t *testing.T) {
+	ctx := cloudy.StartContext()
+
+	_ = testutil.LoadEnv("collider.env")
+	tenantID := cloudy.ForceEnv("TENANT_ID", "")
+	ClientID := cloudy.ForceEnv("ClientID", "")
+	ClientSecret := cloudy.ForceEnv("ClientSecret", "")
+
+	cfg := &MsGraphConfig{
+		TenantID:     tenantID,
+		ClientID:     ClientID,
+		ClientSecret: ClientSecret,
+	}
+	cfg.SetInstance(&USGovernment)
+
+	gm, err := NewMsGraphGroupManager(ctx, cfg)
 	if err != nil {
 		log.Fatalf("Error %v", err)
 	}
@@ -33,12 +62,4 @@ func TestGroupManager(t *testing.T) {
 	for _, group := range groups {
 		_, _ = gm.GetGroupMembers(ctx, group.ID)
 	}
-
-	// um, err := NewMsGraphUserManager(ctx, cfg)
-	// if err != nil {
-	// 	log.Fatalf("Error %v", err)
-	// }
-
-	// testutil.TestGroupManager(t, gm, um)
-
 }
