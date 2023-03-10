@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/appliedres/cloudy"
-	"github.com/appliedres/cloudy/license"
+	"github.com/appliedres/cloudy/licenses"
 	cloudymodels "github.com/appliedres/cloudy/models"
 	"github.com/google/uuid"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	license.LicenseProviders.Register(MsGraphName, &MsGraphLicenseManagerFactory{})
+	licenses.LicenseProviders.Register(MsGraphName, &MsGraphLicenseManagerFactory{})
 }
 
 type MsGraphLicenseManager struct {
@@ -41,7 +41,7 @@ func NewMsGraphLicenseManager(ctx context.Context, cfg *MsGraphConfig) (*MsGraph
 	return lm, err
 }
 
-func (lm *MsGraphLicenseManagerFactory) Create(cfg interface{}) (license.LicenseManager, error) {
+func (lm *MsGraphLicenseManagerFactory) Create(cfg interface{}) (licenses.LicenseManager, error) {
 	return NewMsGraphLicenseManager(context.Background(), cfg.(*MsGraphConfig))
 }
 
@@ -95,7 +95,7 @@ func (lm *MsGraphLicenseManager) RemoveLicense(ctx context.Context, userId strin
 	return err
 }
 
-func (lm *MsGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string) ([]*license.LicenseDescription, error) {
+func (lm *MsGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string) ([]*licenses.LicenseDescription, error) {
 	result, err := lm.Client.UsersById(uid).Get(ctx,
 		&users.UserItemRequestBuilderGetRequestConfiguration{
 			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
@@ -114,10 +114,10 @@ func (lm *MsGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string
 		return nil, err
 	}
 
-	rtn := []*license.LicenseDescription{}
+	rtn := []*licenses.LicenseDescription{}
 	for _, l := range result.GetAssignedLicenses() {
 		rtn = append(rtn,
-			&license.LicenseDescription{
+			&licenses.LicenseDescription{
 				SKU: l.GetSkuId().String(),
 			})
 	}
@@ -163,14 +163,14 @@ func (lm *MsGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku str
 }
 
 // ListLicenses List all the managed licenses
-func (lm *MsGraphLicenseManager) ListLicenses(ctx context.Context) ([]*license.LicenseDescription, error) {
+func (lm *MsGraphLicenseManager) ListLicenses(ctx context.Context) ([]*licenses.LicenseDescription, error) {
 	result, err := lm.Client.SubscribedSkus().Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	all := result.GetValue()
-	rtn := make([]*license.LicenseDescription, len(all))
+	rtn := make([]*licenses.LicenseDescription, len(all))
 	for i, lic := range all {
 		var cnt int32
 		var used int32
@@ -182,7 +182,7 @@ func (lm *MsGraphLicenseManager) ListLicenses(ctx context.Context) ([]*license.L
 			cnt = *lic.GetPrepaidUnits().GetEnabled()
 		}
 
-		rtn[i] = &license.LicenseDescription{
+		rtn[i] = &licenses.LicenseDescription{
 			ID:       *lic.GetId(),
 			SKU:      lic.GetSkuId().String(),
 			Name:     *lic.GetSkuPartNumber(),
