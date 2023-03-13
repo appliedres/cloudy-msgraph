@@ -38,7 +38,6 @@ type MsGraphInviteManager struct {
 	*MsGraph
 }
 
-// CreateInvitation(ctx context.Context, user *models.User, emailInvite bool, inviteRedirectUrl string) error
 func (im *MsGraphInviteManager) CreateInvitation(ctx context.Context, user *cloudymodels.User, emailInvite bool, inviteRedirectUrl string) error {
 	requestBody := graphmodels.NewInvitation()
 	requestBody.SetInvitedUserEmailAddress(&user.Email)
