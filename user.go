@@ -50,6 +50,11 @@ func NewMsGraphUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) 
 }
 
 func fromEnvironment(env *cloudy.Environment) *MsGraphConfig {
+	creds := env.GetCredential(MSGraphCredentialsKey)
+	if creds != nil {
+		return creds.(*MsGraphConfig)
+	}
+
 	cfg := &MsGraphConfig{}
 
 	cfg.TenantID = env.Force("AZ_TENANT_ID")
