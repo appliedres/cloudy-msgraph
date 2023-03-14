@@ -9,16 +9,20 @@ import (
 	"github.com/appliedres/cloudy/testutil"
 	"github.com/stretchr/testify/assert"
 
+	_ "github.com/appliedres/cloudy-azure"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
 func TestUserManager(t *testing.T) {
-	ctx := cloudy.StartContext()
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	_ = testutil.LoadEnv("collider.env")
-	tenantID := cloudy.ForceEnv("TenantID", "")
-	ClientID := cloudy.ForceEnv("ClientID", "")
-	ClientSecret := cloudy.ForceEnv("ClientSecret", "")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	cloudy.SetDefaultEnvironment(env)
+
+	ctx := cloudy.StartContext()
+	tenantID := env.Force("AZ_TENANT_ID")
+	ClientID := env.Force("AZ_CLIENT_ID")
+	ClientSecret := env.Force("AZ_CLIENT_SECRET")
 
 	cfg := &MsGraphConfig{
 		TenantID:     tenantID,

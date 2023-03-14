@@ -9,15 +9,17 @@ import (
 )
 
 func TestLicenseManager(t *testing.T) {
-	ctx := cloudy.StartContext()
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	_ = testutil.LoadEnv("collider.env")
-	tenantID := cloudy.ForceEnv("TenantID", "")
-	ClientID := cloudy.ForceEnv("ClientID", "")
-	ClientSecret := cloudy.ForceEnv("ClientSecret", "")
-	
-	TestUser := cloudy.ForceEnv("TestUser", "")
-	TestSku := cloudy.ForceEnv("TestSku", "")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	cloudy.SetDefaultEnvironment(env)
+
+	ctx := cloudy.StartContext()
+	tenantID := env.Force("AZ_TENANT_ID")
+	ClientID := env.Force("AZ_CLIENT_ID")
+	ClientSecret := env.Force("AZ_CLIENT_SECRET")
+	TestUser := env.Force("TEST_USER")
+	TestSku := env.Force("TEST_SKU")
 
 	cfg := &MsGraphConfig{
 		TenantID:     tenantID,

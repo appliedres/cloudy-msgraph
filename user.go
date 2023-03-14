@@ -123,12 +123,6 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 		return nil, nil, err
 	}
 
-	// items := result.GetValue()
-	// rtn := make([]*cloudymodels.User, len(items))
-	// for i, u := range items {
-	// 	rtn[i] = UserToCloudy(u)
-	// }
-
 	return rtn, nil, nil
 }
 

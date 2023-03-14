@@ -51,7 +51,8 @@ func (lm *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.Environment) (interf
 }
 
 func (lm *MsGraphLicenseManager) AssignLicense(ctx context.Context, userId string, licenseSkus ...string) error {
-	body := users.NewItemMicrosoftGraphAssignLicenseAssignLicensePostRequestBody()
+	//body := users.NewItemMicrosoftGraphAssignLicenseAssignLicensePostRequestBody()
+	body := users.NewItemAssignLicensePostRequestBody()
 
 	assignedLicenses := []models.AssignedLicenseable{}
 	for _, sku := range licenseSkus {
@@ -68,13 +69,13 @@ func (lm *MsGraphLicenseManager) AssignLicense(ctx context.Context, userId strin
 	body.SetAddLicenses(assignedLicenses)
 	body.SetRemoveLicenses([]uuid.UUID{})
 
-	_, err := lm.Client.UsersById(userId).MicrosoftGraphAssignLicense().Post(ctx, body, nil)
+	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
 
 	return err
 }
 
 func (lm *MsGraphLicenseManager) RemoveLicense(ctx context.Context, userId string, licenseSkus ...string) error {
-	body := users.NewItemMicrosoftGraphAssignLicenseAssignLicensePostRequestBody()
+	body := users.NewItemAssignLicensePostRequestBody()
 
 	body.SetAddLicenses([]models.AssignedLicenseable{})
 
@@ -90,7 +91,7 @@ func (lm *MsGraphLicenseManager) RemoveLicense(ctx context.Context, userId strin
 
 	body.SetRemoveLicenses(removedLicenses)
 
-	_, err := lm.Client.UsersById(userId).MicrosoftGraphAssignLicense().Post(ctx, body, nil)
+	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
 
 	return err
 }
