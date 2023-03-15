@@ -74,6 +74,8 @@ func (lm *MsGraphLicenseManager) AssignLicense(ctx context.Context, userId strin
 	return err
 }
 
+// TODO
+// Inherited license assignments cannot be removed from the user directly. To remove their license, you must remove them from their group.
 func (lm *MsGraphLicenseManager) RemoveLicense(ctx context.Context, userId string, licenseSkus ...string) error {
 	body := users.NewItemAssignLicensePostRequestBody()
 
