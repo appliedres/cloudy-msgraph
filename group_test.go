@@ -11,7 +11,7 @@ import (
 func TestGroupManager(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "KEYVAULT")
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -44,7 +44,7 @@ func TestListGroups(t *testing.T) {
 
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "KEYVAULT")
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
