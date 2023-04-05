@@ -4,6 +4,8 @@ go 1.19
 
 replace github.com/appliedres/cloudy => ../cloudy
 
+replace github.com/appliedres/cloudy-azure => ../cloudy-azure
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
@@ -27,7 +29,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/a8m/documentdb v1.3.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/rogpeppe/go-internal v1.9.0 // indirect
 )
 
 require (

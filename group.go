@@ -2,7 +2,6 @@ package cloudymsgraph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
@@ -67,6 +66,8 @@ func (gm *MsGraphGroupManager) GetUserGroups(ctx context.Context, uid string) ([
 	// Does not apply to Get
 	// data := users.NewItemMicrosoftGraphGetMemberGroupsGetMemberGroupsPostRequestBody()
 	// data.SetSecurityEnabledOnly(cloudy.BoolP(false))
+
+	cloudy.Info(ctx, "Getting groups for user: %s", uid)
 
 	results, err := gm.Client.UsersById(uid).MemberOf().Get(context.Background(), nil)
 	if err != nil {
@@ -163,6 +164,8 @@ func (gm *MsGraphGroupManager) GetGroupMembers(ctx context.Context, grpId string
 
 // Remove members from a group
 func (gm *MsGraphGroupManager) RemoveMembers(ctx context.Context, groupId string, userIds []string) error {
+	cloudy.Info(ctx, "MsGraphGroupManager RemoveMembers")
+
 	err := cloudy.MultiError()
 	for _, userId := range userIds {
 		oneErr := gm.Client.GroupsById(groupId).MembersById(userId).Ref().Delete(ctx, nil)
@@ -181,25 +184,47 @@ func (gm *MsGraphGroupManager) RemoveMembers(ctx context.Context, groupId string
 func (gm *MsGraphGroupManager) tempRecover() {
 	err := recover()
 	if err != nil {
-		fmt.Println(err)
+		_ = cloudy.Error(context.Background(), "MsGraphGroupManager Temp Recover: %v", err)
 	}
 }
 
 // Add member(s) to a group
 func (gm *MsGraphGroupManager) AddMembers(ctx context.Context, groupId string, userIds []string) error {
+	cloudy.Info(ctx, "MsGraphGroupManager AddMembers")
+
 	defer gm.tempRecover()
 
-	newMembers := []string{}
+	// Something's wrong with the bulk operation
+	// newMembers := []string{}
+	// for _, userId := range userIds {
+	// 	newMembers = append(newMembers, "https://graph.microsoft.com/v1.0/directoryObjects/"+userId)
+	// }
+
+	// requestBody := graphmodels.NewGroup()
+	// additionalData := requestBody.GetAdditionalData()
+	// additionalData["members@odata.bind"] = newMembers
+	// requestBody.SetAdditionalData(additionalData)
+
+	// _, err := gm.Client.GroupsById(groupId).Patch(ctx, requestBody, nil)
+
+	errs := cloudy.MultiError()
 	for _, userId := range userIds {
-		newMembers = append(newMembers, "https://graph.microsoft.com/v1.0/directoryObjects/"+userId)
+		requestBody := graphmodels.NewReferenceCreate()
+		odataId := "https://graph.microsoft.com/v1.0/directoryObjects/" + userId
+		requestBody.SetOdataId(&odataId)
+
+		err := gm.Client.GroupsById(groupId).Members().Ref().Post(ctx, requestBody, nil)
+
+		if err != nil {
+			errs.Append(err)
+		}
 	}
 
-	requestBody := graphmodels.NewGroup()
-	additionalData := map[string]interface{}{"members@odata.bind": newMembers}
-	requestBody.SetAdditionalData(additionalData)
-	_, err := gm.Client.GroupsById(groupId).Patch(ctx, requestBody, nil)
+	if errs.HasError() {
+		return errs
+	}
 
-	return err
+	return nil
 }
 
 func GroupToCloudy(g graphmodels.Groupable) *models.Group {
@@ -211,12 +236,13 @@ func GroupToCloudy(g graphmodels.Groupable) *models.Group {
 }
 
 func GroupToAzure(cg *models.Group) *graphmodels.Group {
-	g := &graphmodels.Group{}
-	g.SetId(&cg.ID)
-	g.SetDisplayName(&cg.Name)
-	g.SetMailEnabled(cloudy.BoolP(false))
-	g.SetMailNickname(&cg.Name)
-	g.SetSecurityEnabled(cloudy.BoolP(true))
 
-	return g
+	group := graphmodels.NewGroup()
+	group.SetId(&cg.ID)
+	group.SetDisplayName(&cg.Name)
+	group.SetMailEnabled(cloudy.BoolP(false))
+	group.SetMailNickname(&cg.Name)
+	group.SetSecurityEnabled(cloudy.BoolP(true))
+
+	return group
 }

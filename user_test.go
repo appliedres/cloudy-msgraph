@@ -16,20 +16,13 @@ import (
 func TestUserManager(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
-	tenantID := env.Force("AZ_TENANT_ID")
-	ClientID := env.Force("AZ_CLIENT_ID")
-	ClientSecret := env.Force("AZ_CLIENT_SECRET")
 
-	cfg := &MsGraphConfig{
-		TenantID:     tenantID,
-		ClientID:     ClientID,
-		ClientSecret: ClientSecret,
-	}
-	cfg.SetInstance(&USGovernment)
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
 
 	um, err := NewMsGraphUserManager(ctx, cfg)
 	if err != nil {
@@ -37,6 +30,28 @@ func TestUserManager(t *testing.T) {
 	}
 
 	testutil.TestUserManager(t, um)
+
+}
+
+func TestGetUser(t *testing.T) {
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
+	cloudy.SetDefaultEnvironment(env)
+
+	ctx := cloudy.StartContext()
+
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+
+	u, err := um.GetUser(ctx, "adam.dyer2@collider.onmicrosoft.us")
+	assert.Nil(t, err)
+	assert.NotNil(t, u)
 
 }
 

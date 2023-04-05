@@ -81,6 +81,8 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 }
 
 func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
+	cloudy.Info(ctx, "GetUser: %s", uid)
+
 	fields := DefaultUserSelectFields
 
 	result, err := um.Client.UsersById(uid).Get(ctx,
@@ -90,14 +92,17 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 			},
 		})
 	if err != nil {
+
 		oerr := err.(*odataerrors.ODataError)
 		code := *oerr.GetError().GetCode()
+		message := *oerr.GetError().GetMessage()
 
 		if code == "Request_ResourceNotFound" {
+			cloudy.Info(ctx, "GetUser: %s - Request_ResourceNotFound - %s", uid, message)
 			return nil, nil
 		}
 
-		return nil, err
+		return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
 	}
 	return UserToCloudy(result), nil
 }
