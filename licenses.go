@@ -146,14 +146,13 @@ func (lm *MsGraphLicenseManager) GetAssigned(ctx context.Context, licenseSku str
 	}
 
 	var rtn []*cloudymodels.User
-	pageIterator, err := msgraphcore.NewPageIterator(result, lm.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
+	pageIterator, err := msgraphcore.NewPageIterator[models.Userable](result, lm.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
 	if err != nil {
 		return nil, err
 	}
 
-	err = pageIterator.Iterate(ctx, func(pageItem interface{}) bool {
-		u := pageItem.(models.Userable)
-		rtn = append(rtn, UserToCloudy(u))
+	err = pageIterator.Iterate(ctx, func(pageItem models.Userable) bool {
+		rtn = append(rtn, UserToCloudy(pageItem))
 		return true
 	})
 	if err != nil {

@@ -123,5 +123,9 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		}
 	}
 
+	if user.GetStreetAddress() != nil {
+		u.CustomSecurityAttributes = *user.GetStreetAddress()
+	}
+
 	return u
 }
