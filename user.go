@@ -119,14 +119,13 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 	}
 
 	var rtn []*cloudymodels.User
-	pageIterator, err := msgraphcore.NewPageIterator(result, um.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
+	pageIterator, err := msgraphcore.NewPageIterator[models.Userable](result, um.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	err = pageIterator.Iterate(ctx, func(pageItem interface{}) bool {
-		u := pageItem.(models.Userable)
-		rtn = append(rtn, UserToCloudy(u))
+	err = pageIterator.Iterate(ctx, func(pageItem models.Userable) bool {
+		rtn = append(rtn, UserToCloudy(pageItem))
 		return true
 	})
 	if err != nil {
@@ -158,7 +157,8 @@ func (um *MsGraphUserManager) UploadProfilePicture(ctx context.Context, uid stri
 	}
 	id := *u.GetId()
 
-	return um.Client.UsersById(id).Photo().Content().Put(ctx, picture, nil)
+	_, err = um.Client.UsersById(id).Photo().Content().Put(ctx, picture, nil)
+	return err
 }
 
 func (um *MsGraphUserManager) GetProfilePicture(ctx context.Context, uid string) ([]byte, error) {

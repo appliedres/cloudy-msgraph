@@ -66,6 +66,11 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 		u.SetPasswordProfile(profile)
 	}
 
+	// TODO: When Mictosoft fixes the bug with Custom Security Attributes this will need to be changed to u.SetCustomSecurityAttributes and tested
+	if user.CustomSecurityAttributes != "" {
+		u.SetStreetAddress(&user.CustomSecurityAttributes)
+	}
+
 	return u
 }
 
@@ -121,6 +126,12 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		if user.GetPasswordProfile().GetPassword() != nil {
 			u.Password = *user.GetPasswordProfile().GetPassword()
 		}
+	}
+
+	// TODO: When Mictosoft fixes the bug with Custom Security Attributes this will need to be changed to user.GetCustomSecurityAttributes and tested
+	// also change cloudy user model CustomSecurityAttributes from string to object and implement interface
+	if user.GetStreetAddress() != nil {
+		u.CustomSecurityAttributes = *user.GetStreetAddress()
 	}
 
 	return u

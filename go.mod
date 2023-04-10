@@ -11,10 +11,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
 	github.com/appliedres/cloudy v0.0.5-dev.1
 	github.com/google/uuid v1.3.0
-	github.com/microsoft/kiota-abstractions-go v0.17.2
+	github.com/microsoft/kiota-abstractions-go v0.19.0
 	github.com/microsoft/kiota-authentication-azure-go v0.6.0
-	github.com/microsoftgraph/msgraph-sdk-go v0.58.0
-	github.com/microsoftgraph/msgraph-sdk-go-core v0.34.1
+	github.com/microsoftgraph/msgraph-sdk-go v0.61.0
+	github.com/microsoftgraph/msgraph-sdk-go-core v0.36.0
 	github.com/stretchr/testify v1.8.2
 )
 
@@ -49,9 +49,9 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matoous/go-nanoid/v2 v2.0.0 // indirect
-	github.com/microsoft/kiota-http-go v0.16.0 // indirect
-	github.com/microsoft/kiota-serialization-form-go v0.9.0 // indirect
-	github.com/microsoft/kiota-serialization-json-go v0.8.2 // indirect
+	github.com/microsoft/kiota-http-go v0.16.1 // indirect
+	github.com/microsoft/kiota-serialization-form-go v0.9.1 // indirect
+	github.com/microsoft/kiota-serialization-json-go v0.9.1 // indirect
 	github.com/microsoft/kiota-serialization-text-go v0.7.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
