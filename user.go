@@ -119,7 +119,6 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 	}
 
 	var rtn []*cloudymodels.User
-
 	pageIterator, err := msgraphcore.NewPageIterator[models.Userable](result, um.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
 	if err != nil {
 		return nil, nil, err
