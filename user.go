@@ -158,7 +158,8 @@ func (um *MsGraphUserManager) UploadProfilePicture(ctx context.Context, uid stri
 	}
 	id := *u.GetId()
 
-	return um.Client.UsersById(id).Photo().Content().Put(ctx, picture, nil)
+	_, err = um.Client.UsersById(id).Photo().Content().Put(ctx, picture, nil)
+	return err
 }
 
 func (um *MsGraphUserManager) GetProfilePicture(ctx context.Context, uid string) ([]byte, error) {
