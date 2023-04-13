@@ -5,7 +5,7 @@ import (
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
-	graphmodels "github.com/microsoftgraph/msgraph-sdk-go/models"
+	graphmodels "github.com/microsoftgraph/msgraph-beta-sdk-go/models"
 )
 
 func init() {

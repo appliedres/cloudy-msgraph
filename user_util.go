@@ -1,9 +1,12 @@
 package cloudymsgraph
 
 import (
+	b64 "encoding/base64"
+	"encoding/json"
+
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
-	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
 )
 
 var DefaultUserSelectFields = []string{
@@ -20,16 +23,28 @@ var DefaultUserSelectFields = []string{
 	"assignedLicenses",
 	"companyName",
 	"authorizationInfo",
+	"streetAddress",
+}
+
+type UserCustomSecurityAttributes struct {
+	AccountType            string `json:"AccountType"`
+	Citizenship            string `json:"Citizenship"`
+	ContractNumber         string `json:"ContractNumber"`
+	ContractExpirationDate string `json:"ContractExpirationDate"`
+	Justification          string `json:"Justification"`
+	ProgramRole            string `json:"ProgramRole"`
+	Sponsor                string `json:"Sponsor"`
+	StatusReason           string `json:"StatusReason"`
 }
 
 func UserToAzure(user *cloudymodels.User) *models.User {
 	u := models.NewUser()
 	u.SetId(&user.ID)
 
-	u.SetUserPrincipalName(&user.UserName)
+	u.SetUserPrincipalName(&user.UPN)
 	u.SetDisplayName(&user.DisplayName)
 
-	emailNickname := cloudy.TrimDomain(user.UserName)
+	emailNickname := cloudy.TrimDomain(user.UPN)
 	u.SetMailNickname(&emailNickname)
 
 	if user.Email != "" {
@@ -66,6 +81,25 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 		u.SetPasswordProfile(profile)
 	}
 
+	// TODO: When Mictosoft fixes the bug with Custom Security Attributes this will need to be changed
+	if user.AccountType != "" || user.Citizenship != "" || user.ContractDate != "" || user.ContractNumber != "" || user.Justification != "" ||
+		user.ProgramRole != "" || user.Sponsor != "" || user.Status != "" {
+		csa := &UserCustomSecurityAttributes{
+			AccountType:            user.AccountType,
+			Citizenship:            user.Citizenship,
+			ContractExpirationDate: user.ContractDate,
+			ContractNumber:         user.ContractNumber,
+			Justification:          user.Justification,
+			Sponsor:                user.Sponsor,
+			StatusReason:           user.Status,
+		}
+		jsonStr, err := json.Marshal(&csa)
+		if err == nil {
+			sEnc := b64.StdEncoding.EncodeToString(jsonStr)
+			u.SetStreetAddress(&sEnc)
+		}
+	}
+
 	return u
 }
 
@@ -74,7 +108,7 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 
 	u.ID = *user.GetId()
 	if user.GetUserPrincipalName() != nil {
-		u.UserName = *user.GetUserPrincipalName()
+		u.UPN = *user.GetUserPrincipalName()
 	}
 
 	if user.GetGivenName() != nil {
@@ -105,6 +139,10 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		u.Department = *user.GetDepartment()
 	}
 
+	if user.GetDepartment() != nil {
+		u.Department = *user.GetDepartment()
+	}
+
 	if user.GetMobilePhone() != nil {
 		u.MobilePhone = *user.GetMobilePhone()
 	}
@@ -121,6 +159,22 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		if user.GetPasswordProfile().GetPassword() != nil {
 			u.Password = *user.GetPasswordProfile().GetPassword()
 		}
+	}
+
+	// TODO: When Mictosoft fixes the bug with Custom Security Attributes this will need to be changed to user.GetCustomSecurityAttributes and tested
+	// also change cloudy user model CustomSecurityAttributes from string to object and implement interface
+	if user.GetStreetAddress() != nil {
+		sDec, _ := b64.StdEncoding.DecodeString(*user.GetStreetAddress())
+		csa := UserCustomSecurityAttributes{}
+		json.Unmarshal(sDec, &csa)
+
+		u.AccountType = csa.AccountType
+		u.Citizenship = csa.Citizenship
+		u.ContractNumber = csa.ContractNumber
+		u.ContractDate = csa.ContractExpirationDate
+		u.Justification = csa.Justification
+		u.Sponsor = csa.Sponsor
+		u.Status = csa.StatusReason
 	}
 
 	return u

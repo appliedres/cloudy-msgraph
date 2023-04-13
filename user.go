@@ -7,10 +7,10 @@ import (
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
+	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
+	"github.com/microsoftgraph/msgraph-beta-sdk-go/users"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
-	"github.com/microsoftgraph/msgraph-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
-	"github.com/microsoftgraph/msgraph-sdk-go/users"
 )
 
 func init() {
@@ -119,14 +119,14 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 	}
 
 	var rtn []*cloudymodels.User
-	pageIterator, err := msgraphcore.NewPageIterator(result, um.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
+
+	pageIterator, err := msgraphcore.NewPageIterator[models.Userable](result, um.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	err = pageIterator.Iterate(ctx, func(pageItem interface{}) bool {
-		u := pageItem.(models.Userable)
-		rtn = append(rtn, UserToCloudy(u))
+	err = pageIterator.Iterate(ctx, func(pageItem models.Userable) bool {
+		rtn = append(rtn, UserToCloudy(pageItem))
 		return true
 	})
 	if err != nil {
@@ -248,4 +248,29 @@ func (um *MsGraphUserManager) ForceUserName(ctx context.Context, name string) (s
 	}
 
 	return name, false, nil
+}
+
+func (um *MsGraphUserManager) getUserWithCSA(ctx context.Context, uid string) (*cloudymodels.User, error) {
+	cloudy.Info(ctx, "GetUser: %s", uid)
+
+	result, err := um.Client.UsersById(uid).Get(ctx,
+		&users.UserItemRequestBuilderGetRequestConfiguration{
+			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
+				Select: []string{"customSecurityAttributes"},
+			},
+		})
+	if err != nil {
+
+		oerr := err.(*odataerrors.ODataError)
+		code := *oerr.GetError().GetCode()
+		message := *oerr.GetError().GetMessage()
+
+		if code == "Request_ResourceNotFound" {
+			cloudy.Info(ctx, "GetUser: %s - Request_ResourceNotFound - %s", uid, message)
+			return nil, nil
+		}
+
+		return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
+	}
+	return UserToCloudy(result), nil
 }

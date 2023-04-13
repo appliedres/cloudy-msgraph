@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	_ "github.com/appliedres/cloudy-azure"
-	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
 )
 
 func TestUserManager(t *testing.T) {
@@ -36,7 +36,7 @@ func TestUserManager(t *testing.T) {
 func TestGetUser(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -55,9 +55,56 @@ func TestGetUser(t *testing.T) {
 
 }
 
+func TestGetUserToAzure(t *testing.T) {
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	cloudy.SetDefaultEnvironment(env)
+
+	ctx := cloudy.StartContext()
+
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+
+	u, err := um.GetUser(ctx, "adam.dyer2@collider.onmicrosoft.us")
+	assert.Nil(t, err)
+	assert.NotNil(t, u)
+
+	azUser := UserToAzure(u)
+	assert.NotNil(t, azUser)
+
+}
+
+func TestGetUserWithCustomSecurityAttributes(t *testing.T) {
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	cloudy.SetDefaultEnvironment(env)
+
+	ctx := cloudy.StartContext()
+
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+
+	u, err := um.getUserWithCSA(ctx, "adam.dyer2@collider.onmicrosoft.us")
+	assert.Nil(t, err)
+	assert.NotNil(t, u)
+
+}
+
 func TestUserModel(t *testing.T) {
 	cloudyU1 := &cloudymodels.User{
-		UserName:           "a",
+		UPN:                "a",
 		DisplayName:        "b",
 		FirstName:          "d",
 		LastName:           "e",
@@ -75,9 +122,9 @@ func TestUserModel(t *testing.T) {
 
 	azureU2 := models.NewUser()
 	azureU2.SetId(&cloudyU1.ID)
-	azureU2.SetUserPrincipalName(&cloudyU1.UserName)
+	azureU2.SetUserPrincipalName(&cloudyU1.UPN)
 	azureU2.SetDisplayName(&cloudyU1.DisplayName)
-	azureU2.SetMailNickname(&cloudyU1.UserName)
+	azureU2.SetMailNickname(&cloudyU1.UPN)
 	azureU2.SetMail(&cloudyU1.Email)
 	azureU2.SetGivenName(&cloudyU1.FirstName)
 	azureU2.SetSurname(&cloudyU1.LastName)
