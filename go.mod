@@ -29,6 +29,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/a8m/documentdb v1.3.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/microsoftgraph/msgraph-beta-sdk-go v0.59.0 // indirect
 )
 
 require (

@@ -6,9 +6,9 @@ import (
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
 	cloudymodels "github.com/appliedres/cloudy/models"
-	"github.com/microsoftgraph/msgraph-sdk-go/groups"
-	graphmodels "github.com/microsoftgraph/msgraph-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
+	"github.com/microsoftgraph/msgraph-beta-sdk-go/groups"
+	graphmodels "github.com/microsoftgraph/msgraph-beta-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
 )
 
 func init() {
