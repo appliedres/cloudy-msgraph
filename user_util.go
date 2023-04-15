@@ -27,6 +27,7 @@ var DefaultUserSelectFields = []string{
 }
 
 type UserCustomSecurityAttributes struct {
+	AccountStatus          string `json:"AccountStatus"` // approved, pending, rejected, offboarded
 	AccountType            string `json:"AccountType"`
 	Citizenship            string `json:"Citizenship"`
 	ContractNumber         string `json:"ContractNumber"`
@@ -85,6 +86,7 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 	if user.AccountType != "" || user.Citizenship != "" || user.ContractDate != "" || user.ContractNumber != "" || user.Justification != "" ||
 		user.ProgramRole != "" || user.Sponsor != "" || user.Status != "" {
 		csa := &UserCustomSecurityAttributes{
+			AccountStatus:          user.AccountStatus,
 			AccountType:            user.AccountType,
 			Citizenship:            user.Citizenship,
 			ContractExpirationDate: user.ContractDate,
