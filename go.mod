@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/microsoft/kiota-abstractions-go v0.19.0
 	github.com/microsoft/kiota-authentication-azure-go v0.6.0
-	github.com/microsoftgraph/msgraph-sdk-go v0.61.0
+	github.com/microsoftgraph/msgraph-beta-sdk-go v0.59.0
 	github.com/microsoftgraph/msgraph-sdk-go-core v0.36.0
 	github.com/stretchr/testify v1.8.2
 )
@@ -29,7 +29,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/a8m/documentdb v1.3.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/microsoftgraph/msgraph-beta-sdk-go v0.59.0 // indirect
 )
 
 require (

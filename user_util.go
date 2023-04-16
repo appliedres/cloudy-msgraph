@@ -27,14 +27,14 @@ var DefaultUserSelectFields = []string{
 }
 
 type UserCustomSecurityAttributes struct {
-	AccountType            string `json:"AccountType"`
-	Citizenship            string `json:"Citizenship"`
-	ContractNumber         string `json:"ContractNumber"`
-	ContractExpirationDate string `json:"ContractExpirationDate"`
-	Justification          string `json:"Justification"`
-	ProgramRole            string `json:"ProgramRole"`
-	Sponsor                string `json:"Sponsor"`
-	StatusReason           string `json:"StatusReason"`
+	AccountType            string `json:"AccountType,omitempty"`
+	Citizenship            string `json:"Citizenship,omitempty"`
+	ContractNumber         string `json:"ContractNumber,omitempty"`
+	ContractExpirationDate string `json:"ContractExpirationDate,omitempty"`
+	Justification          string `json:"Justification,omitempty"`
+	ProgramRole            string `json:"ProgramRole,omitempty"`
+	Sponsor                string `json:"Sponsor,omitempty"`
+	StatusReason           string `json:"StatusReason,omitempty"`
 }
 
 func UserToAzure(user *cloudymodels.User) *models.User {

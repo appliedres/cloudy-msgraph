@@ -71,7 +71,7 @@ func TestGetUserToAzure(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.GetUser(ctx, "adam.dyer2@collider.onmicrosoft.us")
+	u, err := um.GetUser(ctx, "adam.dyer@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
@@ -96,7 +96,7 @@ func TestGetUserWithCustomSecurityAttributes(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.getUserWithCSA(ctx, "adam.dyer2@collider.onmicrosoft.us")
+	u, err := um.getUserWithCSA(ctx, "john.bauer@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
