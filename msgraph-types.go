@@ -110,7 +110,9 @@ func (azum *MsGraph) Configure(azCfg *MsGraphConfig) error {
 		fmt.Printf("Error creating adapter: %v\n", err)
 		return err
 	}
-	adapter.SetBaseUrl("https://graph.microsoft.us/v1.0")
+
+	// adapter.SetBaseUrl("https://graph.microsoft.us/v1.0")
+	adapter.SetBaseUrl(azCfg.APIBase)
 
 	azum.Cfg = azCfg
 	azum.Adapter = adapter
