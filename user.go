@@ -7,6 +7,7 @@ import (
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
+	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/users"
@@ -108,9 +109,14 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 }
 
 func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*cloudymodels.User, interface{}, error) {
+	headers := abstractions.NewRequestHeaders()
+	headers.Add("ConsistencyLevel", "eventual")
+	// requestCount := true
 	result, err := um.Client.Users().Get(ctx,
 		&users.UsersRequestBuilderGetRequestConfiguration{
+			Headers: headers,
 			QueryParameters: &users.UsersRequestBuilderGetQueryParameters{
+				// Count:  &requestCount,
 				Select: DefaultUserSelectFields,
 			},
 		})
@@ -252,25 +258,47 @@ func (um *MsGraphUserManager) ForceUserName(ctx context.Context, name string) (s
 
 func (um *MsGraphUserManager) getUserWithCSA(ctx context.Context, uid string) (*cloudymodels.User, error) {
 	cloudy.Info(ctx, "GetUser: %s", uid)
+	selectFields := append(DefaultUserSelectFields, "customSecurityAttributes")
+	headers := abstractions.NewRequestHeaders()
+	headers.Add("ConsistencyLevel", "eventual")
+	requestParameters := &users.UserItemRequestBuilderGetQueryParameters{
+		Select: selectFields,
+	}
+	configuration := &users.UserItemRequestBuilderGetRequestConfiguration{
+		Headers:         headers,
+		QueryParameters: requestParameters,
+	}
 
-	result, err := um.Client.UsersById(uid).Get(ctx,
-		&users.UserItemRequestBuilderGetRequestConfiguration{
-			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
-				Select: []string{"customSecurityAttributes"},
-			},
-		})
+	result, err := um.Client.UsersById(uid).Get(ctx, configuration)
 	if err != nil {
-
 		oerr := err.(*odataerrors.ODataError)
-		code := *oerr.GetError().GetCode()
 		message := *oerr.GetError().GetMessage()
-
-		if code == "Request_ResourceNotFound" {
-			cloudy.Info(ctx, "GetUser: %s - Request_ResourceNotFound - %s", uid, message)
-			return nil, nil
-		}
-
 		return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
 	}
+
+	// selectFields := append(DefaultUserSelectFields, "customSecurityAttributes")
+	// headers := abstractions.NewRequestHeaders()
+	// headers.Add("ConsistencyLevel", "eventual")
+
+	// result, err := um.Client.UsersById(uid).Get(ctx,
+	// 	&users.UserItemRequestBuilderGetRequestConfiguration{
+	// 		Headers: headers,
+	// 		QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
+	// 			Select: selectFields,
+	// 		},
+	// 	})
+	// if err != nil {
+
+	// 	oerr := err.(*odataerrors.ODataError)
+	// 	code := *oerr.GetError().GetCode()
+	// 	message := *oerr.GetError().GetMessage()
+
+	// 	if code == "Request_ResourceNotFound" {
+	// 		cloudy.Info(ctx, "GetUser: %s - Request_ResourceNotFound - %s", uid, message)
+	// 		return nil, nil
+	// 	}
+
+	// 	return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
+	// }
 	return UserToCloudy(result), nil
 }
