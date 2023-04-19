@@ -158,7 +158,7 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		u.Enabled = *user.GetAccountEnabled()
 	}
 
-	if user.GetSignInActivity().GetLastSignInDateTime() != nil {
+	if user.GetSignInActivity() != nil && user.GetSignInActivity().GetLastSignInDateTime() != nil {
 		lastSignIn := *user.GetSignInActivity().GetLastSignInDateTime()
 		u.LastSignInDate = strfmt.DateTime(lastSignIn)
 	}
