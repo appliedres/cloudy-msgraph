@@ -1,8 +1,10 @@
 package cloudymsgraph
 
 import (
+	"context"
 	"log"
 	"testing"
+	"time"
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
@@ -49,7 +51,7 @@ func TestGetUser(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.GetUser(ctx, "adam.dyer2@collider.onmicrosoft.us")
+	u, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
@@ -71,7 +73,8 @@ func TestGetUserByEmail(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.GetUserByEmail(ctx, "john.bauer@collider.onmicrosoft.us")
+	u, err := um.GetUserByEmail(ctx, "john.bauer@collider.onmicrosoft.us",
+		&cloudy.UserOptions{IncludeLastSignIn: cloudy.BoolP(true)})
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
@@ -118,10 +121,51 @@ func TestGetUserWithCustomSecurityAttributes(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.getUserWithCSA(ctx, "john.bauer@collider.onmicrosoft.us")
+	u, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
+}
+
+func TestUpdateUser(t *testing.T) {
+	ctx, um := testUM()
+
+	u, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
+	assert.Nil(t, err)
+
+	data := time.Now().Format(time.RFC1123Z)
+	u.ContractNumber = data
+	u.ContractDate = "Whenever"
+	u.Citizenship = "USA"
+	u.AccountType = "DOD Contractor"
+	err = um.UpdateUser(ctx, u)
+	assert.Nil(t, err)
+
+	// Eventually consistent... give it 5 sec
+	time.Sleep(10 * time.Second)
+
+	u2, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
+	assert.Nil(t, err)
+
+	assert.Equal(t, data, u2.ContractNumber)
+}
+
+func testUM() (context.Context, *MsGraphUserManager) {
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	cloudy.SetDefaultEnvironment(env)
+
+	ctx := cloudy.StartContext()
+
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+	return ctx, um
 }
 
 func TestUserModel(t *testing.T) {

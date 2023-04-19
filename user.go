@@ -83,11 +83,14 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 
 func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
 	cloudy.Info(ctx, "GetUser: %s", uid)
+	headers := abstractions.NewRequestHeaders()
+	headers.Add("ConsistencyLevel", "eventual")
 
 	fields := DefaultUserSelectFields
 
 	result, err := um.Client.UsersById(uid).Get(ctx,
 		&users.UserItemRequestBuilderGetRequestConfiguration{
+			Headers: headers,
 			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
 				Select: fields,
 			},
@@ -108,16 +111,17 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 	return UserToCloudy(result), nil
 }
 
-func (um *MsGraphUserManager) GetUserByEmail(ctx context.Context, email string) (*cloudymodels.User, error) {
+func (um *MsGraphUserManager) GetUserByEmail(ctx context.Context, email string, opts *cloudy.UserOptions) (*cloudymodels.User, error) {
 
 	headers := abstractions.NewRequestHeaders()
 	headers.Add("ConsistencyLevel", "eventual")
 
 	requestFilter := fmt.Sprintf("mail eq '%v'", email)
-
+	count := true
 	requestParameters := &users.UsersRequestBuilderGetQueryParameters{
 		Filter: &requestFilter,
-		Select: DefaultUserSelectFields,
+		Select: append(DefaultUserSelectFields, SigninActivityField),
+		Count:  &count,
 	}
 	configuration := &users.UsersRequestBuilderGetRequestConfiguration{
 		Headers:         headers,
@@ -149,6 +153,11 @@ func (um *MsGraphUserManager) GetUserByEmail(ctx context.Context, email string) 
 	if len(rtn) == 0 {
 		return nil, nil
 	}
+
+	if opts != nil && opts.IncludeLastSignIn != nil && *opts.IncludeLastSignIn {
+		//OK ... this is really strange... we need to request "JUST" the "signinactivity" since it fig
+	}
+
 	return rtn[0], nil
 }
 
@@ -302,8 +311,10 @@ func (um *MsGraphUserManager) ForceUserName(ctx context.Context, name string) (s
 
 func (um *MsGraphUserManager) getUserWithCSA(ctx context.Context, uid string) (*cloudymodels.User, error) {
 	cloudy.Info(ctx, "GetUser: %s", uid)
+
 	selectFields := append(DefaultUserSelectFields, "customSecurityAttributes")
 	headers := abstractions.NewRequestHeaders()
+
 	headers.Add("ConsistencyLevel", "eventual")
 	requestParameters := &users.UserItemRequestBuilderGetQueryParameters{
 		Select: selectFields,
