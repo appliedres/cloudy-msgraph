@@ -6,10 +6,13 @@ import (
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
+	"github.com/go-openapi/strfmt"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
 )
 
 var DefaultUserSelectFields = []string{
+	"accountEnabled",
+	"signInActivity",
 	"businessPhones",
 	"displayName",
 	"givenName",
@@ -149,6 +152,15 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 
 	if len(user.GetBusinessPhones()) >= 1 {
 		u.OfficePhone = user.GetBusinessPhones()[0]
+	}
+
+	if user.GetAccountEnabled() != nil {
+		u.Enabled = *user.GetAccountEnabled()
+	}
+
+	if user.GetSignInActivity() != nil && user.GetSignInActivity().GetLastSignInDateTime() != nil {
+		lastSignIn := *user.GetSignInActivity().GetLastSignInDateTime()
+		u.LastSignInDate = strfmt.DateTime(lastSignIn)
 	}
 
 	if user.GetPasswordProfile() != nil {

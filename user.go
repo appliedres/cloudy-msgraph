@@ -108,6 +108,50 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 	return UserToCloudy(result), nil
 }
 
+func (um *MsGraphUserManager) GetUserByEmail(ctx context.Context, email string) (*cloudymodels.User, error) {
+
+	headers := abstractions.NewRequestHeaders()
+	headers.Add("ConsistencyLevel", "eventual")
+
+	requestFilter := fmt.Sprintf("mail eq '%v'", email)
+
+	requestParameters := &users.UsersRequestBuilderGetQueryParameters{
+		Filter: &requestFilter,
+		Select: DefaultUserSelectFields,
+	}
+	configuration := &users.UsersRequestBuilderGetRequestConfiguration{
+		Headers:         headers,
+		QueryParameters: requestParameters,
+	}
+
+	result, err := um.Client.Users().Get(ctx, configuration)
+	if err != nil {
+		oerr := err.(*odataerrors.ODataError)
+		code := *oerr.GetError().GetCode()
+		message := *oerr.GetError().GetMessage()
+
+		return nil, fmt.Errorf("%v : %v", code, message)
+	}
+
+	var rtn []*cloudymodels.User
+	pageIterator, err := msgraphcore.NewPageIterator[models.Userable](result, um.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
+	if err != nil {
+		return nil, err
+	}
+
+	err = pageIterator.Iterate(ctx, func(pageItem models.Userable) bool {
+		rtn = append(rtn, UserToCloudy(pageItem))
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(rtn) == 0 {
+		return nil, nil
+	}
+	return rtn[0], nil
+}
+
 func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*cloudymodels.User, interface{}, error) {
 	headers := abstractions.NewRequestHeaders()
 	headers.Add("ConsistencyLevel", "eventual")

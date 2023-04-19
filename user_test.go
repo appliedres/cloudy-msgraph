@@ -55,6 +55,28 @@ func TestGetUser(t *testing.T) {
 
 }
 
+func TestGetUserByEmail(t *testing.T) {
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	cloudy.SetDefaultEnvironment(env)
+
+	ctx := cloudy.StartContext()
+
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+
+	u, err := um.GetUserByEmail(ctx, "john.bauer@collider.onmicrosoft.us")
+	assert.Nil(t, err)
+	assert.NotNil(t, u)
+
+}
+
 func TestGetUserToAzure(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
