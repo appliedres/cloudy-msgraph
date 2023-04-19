@@ -12,7 +12,8 @@ import (
 
 var DefaultUserSelectFields = []string{
 	"accountEnabled",
-	"signInActivity",
+	"customSecurityAttributes",
+	// "signInActivity",
 	"businessPhones",
 	"displayName",
 	"givenName",
@@ -28,6 +29,8 @@ var DefaultUserSelectFields = []string{
 	"authorizationInfo",
 	"streetAddress",
 }
+
+var SigninActivityField = "signInActivity"
 
 type UserCustomSecurityAttributes struct {
 	AccountType            string `json:"AccountType,omitempty"`
@@ -85,22 +88,27 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 	}
 
 	// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed
-	if user.AccountType != "" || user.Citizenship != "" || user.ContractDate != "" || user.ContractNumber != "" || user.Justification != "" ||
-		user.ProgramRole != "" || user.Sponsor != "" || user.Status != "" {
-		csa := &UserCustomSecurityAttributes{
-			AccountType:            user.AccountType,
-			Citizenship:            user.Citizenship,
-			ContractExpirationDate: user.ContractDate,
-			ContractNumber:         user.ContractNumber,
-			Justification:          user.Justification,
-			Sponsor:                user.Sponsor,
-			StatusReason:           user.Status,
+	if user.AccountType != "" || user.Citizenship != "" || user.ContractDate != "" || user.ContractNumber != "" {
+		cloudyattr := make(map[string]interface{})
+
+		odata := "#Microsoft.DirectoryServices.CustomSecurityAttributeValue"
+		cloudyattr["@odata.type"] = &odata
+		if user.AccountType != "" {
+			cloudyattr["AccountType"] = &user.AccountType
 		}
-		jsonStr, err := json.Marshal(&csa)
-		if err == nil {
-			sEnc := b64.StdEncoding.EncodeToString(jsonStr)
-			u.SetStreetAddress(&sEnc)
+		if user.Citizenship != "" {
+			cloudyattr["Citizenship"] = &user.Citizenship
 		}
+		if user.ContractDate != "" {
+			cloudyattr["ContractExpirationDate"] = &user.ContractDate
+		}
+		if user.ContractNumber != "" {
+			cloudyattr["ContractNumber"] = &user.ContractNumber
+		}
+
+		customSecurityAttributes := models.NewCustomSecurityAttributeValue()
+		customSecurityAttributes.GetAdditionalData()["cloudy"] = cloudyattr
+		u.SetCustomSecurityAttributes(customSecurityAttributes)
 	}
 
 	return u
@@ -109,7 +117,10 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 func UserToCloudy(user models.Userable) *cloudymodels.User {
 	u := &cloudymodels.User{}
 
-	u.ID = *user.GetId()
+	if user.GetId() != nil {
+		u.ID = *user.GetId()
+	}
+
 	if user.GetUserPrincipalName() != nil {
 		u.UPN = *user.GetUserPrincipalName()
 	}
@@ -173,9 +184,36 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		}
 	}
 
-	// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed to user.GetCustomSecurityAttributes and tested
-	// also change cloudy user model CustomSecurityAttributes from string to object and implement interface
-	if user.GetStreetAddress() != nil {
+	if user.GetCustomSecurityAttributes() != nil && user.GetCustomSecurityAttributes().GetAdditionalData() != nil {
+
+		// Read the Contract Number
+		contractNumber := readCustomAttributeStr(user, "cloudy", "ContractNumber")
+		if contractNumber != nil {
+			u.ContractNumber = *contractNumber
+		}
+
+		// Read the Contract Date
+		contractDate := readCustomAttributeStr(user, "cloudy", "ContractExpirationDate")
+		if contractDate != nil {
+			u.ContractDate = *contractDate
+		}
+
+		// Read the Account Type
+		acctType := readCustomAttributeStr(user, "cloudy", "AccountType")
+		if acctType != nil {
+			u.AccountType = *acctType
+		}
+
+		// Read the Citizenship
+		citizenship := readCustomAttributeStr(user, "cloudy", "Citizenship")
+		if citizenship != nil {
+			u.Citizenship = *citizenship
+		}
+
+	} else if user.GetStreetAddress() != nil {
+		// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed to user.GetCustomSecurityAttributes and tested
+		// also change cloudy user model CustomSecurityAttributes from string to object and implement interface
+
 		sDec, _ := b64.StdEncoding.DecodeString(*user.GetStreetAddress())
 		csa := UserCustomSecurityAttributes{}
 		json.Unmarshal(sDec, &csa)
@@ -184,10 +222,23 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		u.Citizenship = csa.Citizenship
 		u.ContractNumber = csa.ContractNumber
 		u.ContractDate = csa.ContractExpirationDate
-		u.Justification = csa.Justification
-		u.Sponsor = csa.Sponsor
-		u.Status = csa.StatusReason
 	}
 
 	return u
+}
+
+func readCustomAttributeStr(user models.Userable, category string, attrName string) *string {
+	if user.GetCustomSecurityAttributes() != nil && user.GetCustomSecurityAttributes().GetAdditionalData() != nil {
+		attr := user.GetCustomSecurityAttributes().GetAdditionalData()
+		attrCatMap := attr[category]
+		if attrCatMap != nil && attrCatMap.(map[string]interface{}) != nil {
+			cloudyAttrMap := attrCatMap.(map[string]interface{})
+
+			val := cloudyAttrMap[attrName]
+			if val != nil && val.(*string) != nil {
+				return val.(*string)
+			}
+		}
+	}
+	return nil
 }
