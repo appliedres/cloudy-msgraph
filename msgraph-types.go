@@ -111,7 +111,6 @@ func (azum *MsGraph) Configure(azCfg *MsGraphConfig) error {
 		return err
 	}
 
-	// adapter.SetBaseUrl("https://graph.microsoft.us/v1.0")
 	adapter.SetBaseUrl(azCfg.APIBase)
 
 	azum.Cfg = azCfg
@@ -161,7 +160,6 @@ func NewGraph(ctx context.Context, tenantID string, clientID string, clientSecre
 		fmt.Printf("Error creating adapter: %v\n", err)
 		return nil, err
 	}
-	adapter.SetBaseUrl("https://graph.microsoft.us/v1.0")
 
 	return &MsGraph{
 		Adapter: adapter,
