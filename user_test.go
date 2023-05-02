@@ -183,7 +183,6 @@ func TestUserModel(t *testing.T) {
 		MustChangePassword: true,
 		OfficePhone:        "l",
 		Password:           "m",
-		Status:             "",
 	}
 
 	azureU2 := models.NewUser()
