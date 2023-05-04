@@ -2,10 +2,12 @@ package cloudymsgraph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
 	cloudymodels "github.com/appliedres/cloudy/models"
+	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/groups"
 	graphmodels "github.com/microsoftgraph/msgraph-beta-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
@@ -102,6 +104,41 @@ func (gm *MsGraphGroupManager) GetGroup(ctx context.Context, id string) (*models
 		return nil, err
 	}
 	return GroupToCloudy(result), nil
+}
+
+func (gm *MsGraphGroupManager) GetGroupId(ctx context.Context, name string) (string, error) {
+	cloudy.Info(ctx, "MsGraphGroupManager geet group id by display name %v", name)
+	headers := abstractions.NewRequestHeaders()
+	headers.Add("ConsistencyLevel", "eventual")
+
+	requestFilter := fmt.Sprintf("displayName eq '%v'", name)
+	requestParameters := &groups.GroupsRequestBuilderGetQueryParameters{
+		Filter: &requestFilter,
+	}
+
+	configuration := &groups.GroupsRequestBuilderGetRequestConfiguration{
+		Headers:         headers,
+		QueryParameters: requestParameters,
+	}
+
+	result, err := gm.Client.Groups().Get(ctx, configuration)
+	if err != nil {
+		oerr := err.(*odataerrors.ODataError)
+		code := *oerr.GetError().GetCode()
+		message := *oerr.GetError().GetMessage()
+
+		return "", fmt.Errorf("%v : %v", code, message)
+	}
+
+	var rtn []*cloudymodels.Group
+
+	groups := result.GetValue()
+	for _, g := range groups {
+		rtn = append(rtn, GroupToCloudy(g))
+	}
+
+	return rtn[0].ID, nil
+
 }
 
 // Create a new Group
