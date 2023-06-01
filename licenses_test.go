@@ -9,24 +9,18 @@ import (
 )
 
 func TestLicenseManager(t *testing.T) {
-	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+	ctx := cloudy.StartContext()
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := testutil.CreateTestEnvironment()
 	cloudy.SetDefaultEnvironment(env)
 
-	ctx := cloudy.StartContext()
-	tenantID := env.Force("AZ_TENANT_ID")
-	ClientID := env.Force("AZ_CLIENT_ID")
-	ClientSecret := env.Force("AZ_CLIENT_SECRET")
-	TestUser := env.Force("TEST_USER")
-	TestSku := env.Force("TEST_SKU")
-
-	cfg := &MsGraphConfig{
-		TenantID:     tenantID,
-		ClientID:     ClientID,
-		ClientSecret: ClientSecret,
-	}
+	testEnv := env.Segment("TEST")
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(testEnv).(*MsGraphConfig)
 	cfg.SetInstance(&USGovernment)
+
+	TestUser := "unittest@collider.onmicrosoft.us"
+	TestSku := GCCHighAADP2
 
 	lm, err := NewMsGraphLicenseManager(ctx, cfg)
 	if err != nil {

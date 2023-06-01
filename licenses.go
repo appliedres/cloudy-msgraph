@@ -22,6 +22,7 @@ type MsGraphLicenseManager struct {
 	*MsGraph
 }
 
+var GCCHighAADP2 = "e1b29dba-2e29-4e1e-9c0b-784303f4fb7f"
 var GCCHighTeamsPhone = "985fcb26-7b94-475b-b512-89356697be71"
 var GCCHighVisioPlan1 = "50a4284d-f0b2-4779-8de6-72c5f9b4349f"
 var GCCHighTeamsAudio = "4dee1f32-0808-4fd2-a2ed-fdd575e3a45f"

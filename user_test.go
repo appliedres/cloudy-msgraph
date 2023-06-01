@@ -3,6 +3,7 @@ package cloudymsgraph
 import (
 	"context"
 	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -16,15 +17,15 @@ import (
 )
 
 func TestUserManager(t *testing.T) {
-	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
-
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
+	os.Setenv("USER_DOMAIN", "collider.onmicrosoft.us")
+	env := testutil.CreateTestEnvironment()
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
 
 	loader := MSGraphCredentialLoader{}
-	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+	testEnv := env.Segment("TEST")
+	cfg := loader.ReadFromEnv(testEnv).(*MsGraphConfig)
 
 	um, err := NewMsGraphUserManager(ctx, cfg)
 	if err != nil {
@@ -36,9 +37,7 @@ func TestUserManager(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
-
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := testutil.CreateTestEnvironment()
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -60,7 +59,7 @@ func TestGetUser(t *testing.T) {
 func TestGetUserByEmail(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := testutil.CreateTestEnvironment()
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -73,7 +72,7 @@ func TestGetUserByEmail(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.GetUserByEmail(ctx, "john.bauer@collider.onmicrosoft.us",
+	u, err := um.GetUserByEmail(ctx, "unittest@collider.onmicrosoft.us",
 		&cloudy.UserOptions{IncludeLastSignIn: cloudy.BoolP(true)})
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
@@ -83,7 +82,7 @@ func TestGetUserByEmail(t *testing.T) {
 func TestGetUserToAzure(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := testutil.CreateTestEnvironment()
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -96,7 +95,7 @@ func TestGetUserToAzure(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.GetUser(ctx, "adam.dyer@collider.onmicrosoft.us")
+	u, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
@@ -108,7 +107,7 @@ func TestGetUserToAzure(t *testing.T) {
 func TestGetUserWithCustomSecurityAttributes(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := testutil.CreateTestEnvironment()
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -153,7 +152,7 @@ func TestUpdateUser(t *testing.T) {
 func testUM() (context.Context, *MsGraphUserManager) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "")
+	env := testutil.CreateTestEnvironment()
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()

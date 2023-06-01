@@ -13,16 +13,12 @@ import (
 func TestInviteManager(t *testing.T) {
 	ctx := cloudy.StartContext()
 
-	_ = testutil.LoadEnv("collider.env")
-	tenantID := cloudy.ForceEnv("TenantID", "")
-	ClientID := cloudy.ForceEnv("ClientID", "")
-	ClientSecret := cloudy.ForceEnv("ClientSecret", "")
+	env := testutil.CreateTestEnvironment()
+	cloudy.SetDefaultEnvironment(env)
 
-	cfg := &MsGraphConfig{
-		TenantID:     tenantID,
-		ClientID:     ClientID,
-		ClientSecret: ClientSecret,
-	}
+	testEnv := env.Segment("TEST")
+	loader := MSGraphCredentialLoader{}
+	cfg := loader.ReadFromEnv(testEnv).(*MsGraphConfig)
 	cfg.SetInstance(&USGovernment)
 
 	inviteUser := &cloudymodels.User{

@@ -9,7 +9,7 @@ replace github.com/appliedres/cloudy-azure => ../cloudy-azure
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
-	github.com/appliedres/cloudy v0.0.7
+	github.com/appliedres/cloudy v0.0.11
 	github.com/google/uuid v1.3.0
 	github.com/microsoft/kiota-abstractions-go v0.19.0
 	github.com/microsoft/kiota-authentication-azure-go v0.6.0

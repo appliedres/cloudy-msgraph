@@ -108,6 +108,7 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 
 		return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
 	}
+
 	return UserToCloudy(result), nil
 }
 
