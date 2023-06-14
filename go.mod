@@ -2,14 +2,10 @@ module github.com/appliedres/cloudy-msgraph
 
 go 1.19
 
-replace github.com/appliedres/cloudy => ../cloudy
-
-replace github.com/appliedres/cloudy-azure => ../cloudy-azure
-
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
-	github.com/appliedres/cloudy v0.0.11
+	github.com/appliedres/cloudy v0.0.12
 	github.com/google/uuid v1.3.0
 	github.com/microsoft/kiota-abstractions-go v0.19.0
 	github.com/microsoft/kiota-authentication-azure-go v0.6.0
@@ -35,6 +31,7 @@ require (
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/validate v0.22.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 )
 
 require (
