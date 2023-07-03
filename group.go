@@ -59,6 +59,8 @@ func (gm *MsGraphGroupManager) ListGroups(ctx context.Context) ([]*models.Group,
 		rtn = append(rtn, GroupToCloudy(g))
 	}
 
+	cloudy.Info(ctx, "MsGraphGroupManager Creating Group array complete")
+
 	return rtn, nil
 }
 
