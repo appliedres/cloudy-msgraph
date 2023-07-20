@@ -222,14 +222,33 @@ func (um *MsGraphUserManager) UploadProfilePicture(ctx context.Context, uid stri
 }
 
 func (um *MsGraphUserManager) GetProfilePicture(ctx context.Context, uid string) ([]byte, error) {
+	cloudy.Info(ctx, "GetProfilePicture for %s", uid)
 
 	u, err := um.Client.UsersById(uid).Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	if u == nil {
+		cloudy.Info(ctx, "GetProfilePicture for %s - No user found", uid)
+		return nil, nil
+	}
+
 	id := *u.GetId()
 
 	photo, err := um.Client.UsersById(id).Photo().Content().Get(ctx, nil)
+	if err != nil {
+		serr, ok := err.(*odataerrors.ODataError)
+		if ok {
+			terr := serr.GetError()
+			if terr != nil {
+				if strings.EqualFold(*terr.GetCode(), "ImageNotFound") {
+					return nil, nil
+				}
+			}
+		}
+	}
+
 	return photo, err
 }
 
