@@ -3,13 +3,13 @@ package cloudymsgraph
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/license"
 	cloudymodels "github.com/appliedres/cloudy/models"
 	"github.com/google/uuid"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/users"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 )
@@ -70,7 +70,7 @@ func (lm *MsGraphLicenseManager) AssignLicense(ctx context.Context, userId strin
 	body.SetAddLicenses(assignedLicenses)
 	body.SetRemoveLicenses([]uuid.UUID{})
 
-	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
+	_, err := lm.Client.Users().ByUserId(userId).AssignLicense().Post(ctx, body, nil)
 
 	return err
 }
@@ -92,13 +92,13 @@ func (lm *MsGraphLicenseManager) RemoveLicense(ctx context.Context, userId strin
 
 	body.SetRemoveLicenses(removedLicenses)
 
-	_, err := lm.Client.UsersById(userId).AssignLicense().Post(ctx, body, nil)
+	_, err := lm.Client.Users().ByUserId(userId).AssignLicense().Post(ctx, body, nil)
 
 	return err
 }
 
 func (lm *MsGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string) ([]*license.LicenseDescription, error) {
-	result, err := lm.Client.UsersById(uid).Get(ctx,
+	result, err := lm.Client.Users().ByUserId(uid).Get(ctx,
 		&users.UserItemRequestBuilderGetRequestConfiguration{
 			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
 				Select: []string{"assignedLicenses"},
@@ -106,14 +106,13 @@ func (lm *MsGraphLicenseManager) GetUserAssigned(ctx context.Context, uid string
 		})
 
 	if err != nil {
-		oerr := err.(*odataerrors.ODataError)
-		code := *oerr.GetError().GetCode()
+		code, message := GetErrorCodeAndMessage(ctx, err)
 
-		if code == "Request_ResourceNotFound" {
+		if strings.EqualFold(code, ResourceNotFoundCode) {
 			return nil, nil
 		}
 
-		return nil, err
+		return nil, cloudy.Error(ctx, "GetUserAssigned Error: %s %s", uid, message)
 	}
 
 	rtn := []*license.LicenseDescription{}

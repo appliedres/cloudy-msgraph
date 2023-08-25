@@ -3,7 +3,6 @@ package cloudymsgraph
 import (
 	"context"
 	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -17,19 +16,14 @@ import (
 )
 
 func TestUserManager(t *testing.T) {
-	os.Setenv("USER_DOMAIN", "collider.onmicrosoft.us")
-	env := testutil.CreateTestEnvironment()
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
 	cloudy.SetDefaultEnvironment(env)
 
-	ctx := cloudy.StartContext()
-
-	loader := MSGraphCredentialLoader{}
-	testEnv := env.Segment("TEST")
-	cfg := loader.ReadFromEnv(testEnv).(*MsGraphConfig)
-
-	um, err := NewMsGraphUserManager(ctx, cfg)
+	msgraphCreds := env.LoadCredentials("MSGRAPH")
+	um, err := cloudy.UserProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "USER"), "DRIVER")
 	if err != nil {
-		log.Fatalf("Error %v", err)
+		log.Fatalf("Could not instantiate the user manager. %v", err)
 	}
 
 	testutil.TestUserManager(t, um)
@@ -37,40 +31,56 @@ func TestUserManager(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	env := testutil.CreateTestEnvironment()
-	cloudy.SetDefaultEnvironment(env)
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
 	ctx := cloudy.StartContext()
 
-	loader := MSGraphCredentialLoader{}
-	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
+	cloudy.SetDefaultEnvironment(env)
 
-	um, err := NewMsGraphUserManager(ctx, cfg)
+	msgraphCreds := env.LoadCredentials("MSGRAPH")
+	um, err := cloudy.UserProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "USER"), "DRIVER")
 	if err != nil {
-		log.Fatalf("Error %v", err)
+		log.Fatalf("Could not instantiate the user manager. %v", err)
 	}
-
-	u, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
+	u, err := um.GetUser(ctx, "test.user@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
+}
 
+func TestGetUserProfilePicture(t *testing.T) {
+	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+
+	ctx := cloudy.StartContext()
+
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
+	cloudy.SetDefaultEnvironment(env)
+
+	msgraphCreds := env.LoadCredentials("MSGRAPH")
+	um, err := cloudy.UserProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "USER"), "DRIVER")
+	if err != nil {
+		log.Fatalf("Could not instantiate the user manager. %v", err)
+	}
+
+	uid := "test.user@collider.onmicrosoft.us"
+
+	pic, err := um.(*MsGraphUserManager).GetProfilePicture(ctx, uid)
+	assert.Nil(t, err)
+	assert.NotNil(t, pic)
 }
 
 func TestGetUserByEmail(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
-
-	env := testutil.CreateTestEnvironment()
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
 	cloudy.SetDefaultEnvironment(env)
 
-	ctx := cloudy.StartContext()
-
-	loader := MSGraphCredentialLoader{}
-	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
-
-	um, err := NewMsGraphUserManager(ctx, cfg)
+	msgraphCreds := env.LoadCredentials("MSGRAPH")
+	um, err := cloudy.UserProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "USER"), "DRIVER")
 	if err != nil {
 		log.Fatalf("Error %v", err)
 	}
+
+	ctx := cloudy.StartContext()
 
 	u, err := um.GetUserByEmail(ctx, "unittest@collider.onmicrosoft.us",
 		&cloudy.UserOptions{IncludeLastSignIn: cloudy.BoolP(true)})

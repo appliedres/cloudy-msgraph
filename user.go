@@ -9,7 +9,6 @@ import (
 	cloudymodels "github.com/appliedres/cloudy/models"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/users"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
 )
@@ -88,7 +87,7 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 
 	fields := DefaultUserSelectFields
 
-	result, err := um.Client.UsersById(uid).Get(ctx,
+	result, err := um.Client.Users().ByUserId(uid).Get(ctx,
 		&users.UserItemRequestBuilderGetRequestConfiguration{
 			Headers: headers,
 			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
@@ -96,13 +95,10 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 			},
 		})
 	if err != nil {
+		code, message := GetErrorCodeAndMessage(ctx, err)
 
-		oerr := err.(*odataerrors.ODataError)
-		code := *oerr.GetError().GetCode()
-		message := *oerr.GetError().GetMessage()
-
-		if code == "Request_ResourceNotFound" {
-			cloudy.Info(ctx, "GetUser: %s - Request_ResourceNotFound - %s", uid, message)
+		if strings.EqualFold(code, ResourceNotFoundCode) {
+			cloudy.Info(ctx, "GetUser: %s - ResourceNotFound - %s", uid, message)
 			return nil, nil
 		}
 
@@ -131,11 +127,13 @@ func (um *MsGraphUserManager) GetUserByEmail(ctx context.Context, email string, 
 
 	result, err := um.Client.Users().Get(ctx, configuration)
 	if err != nil {
-		oerr := err.(*odataerrors.ODataError)
-		code := *oerr.GetError().GetCode()
-		message := *oerr.GetError().GetMessage()
+		code, message := GetErrorCodeAndMessage(ctx, err)
 
-		return nil, fmt.Errorf("%v : %v", code, message)
+		if strings.EqualFold(code, ResourceNotFoundCode) {
+			return nil, cloudy.Error(ctx, "GetUserByEmail Error: %s - ResourceNotFound - %s", email, message)
+		}
+
+		return nil, cloudy.Error(ctx, "GetUserByEmail Error: %s %s", email, message)
 	}
 
 	var rtn []*cloudymodels.User
@@ -198,7 +196,7 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 func (um *MsGraphUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
 	azUser := UserToAzure(usr)
 
-	_, err := um.Client.UsersById(usr.ID).Patch(ctx, azUser, nil)
+	_, err := um.Client.Users().ByUserId(usr.ID).Patch(ctx, azUser, nil)
 	return err
 }
 
@@ -206,25 +204,25 @@ func (um *MsGraphUserManager) Enable(ctx context.Context, uid string) error {
 	u := models.NewUser()
 	u.SetAccountEnabled(cloudy.BoolP(true))
 
-	_, err := um.Client.UsersById(uid).Patch(ctx, u, nil)
+	_, err := um.Client.Users().ByUserId(uid).Patch(ctx, u, nil)
 	return err
 }
 
 func (um *MsGraphUserManager) UploadProfilePicture(ctx context.Context, uid string, picture []byte) error {
-	u, err := um.Client.UsersById(uid).Get(ctx, nil)
+	u, err := um.Client.Users().ByUserId(uid).Get(ctx, nil)
 	if err != nil {
 		return err
 	}
 	id := *u.GetId()
 
-	_, err = um.Client.UsersById(id).Photo().Content().Put(ctx, picture, nil)
+	_, err = um.Client.Users().ByUserId(id).Photo().Content().Put(ctx, picture, nil)
 	return err
 }
 
 func (um *MsGraphUserManager) GetProfilePicture(ctx context.Context, uid string) ([]byte, error) {
 	cloudy.Info(ctx, "GetProfilePicture for %s", uid)
 
-	u, err := um.Client.UsersById(uid).Get(ctx, nil)
+	u, err := um.Client.Users().ByUserId(uid).Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -234,19 +232,16 @@ func (um *MsGraphUserManager) GetProfilePicture(ctx context.Context, uid string)
 		return nil, nil
 	}
 
-	id := *u.GetId()
-
-	photo, err := um.Client.UsersById(id).Photo().Content().Get(ctx, nil)
+	photo, err := um.Client.Users().ByUserId(*u.GetId()).Photo().Content().Get(ctx, nil)
 	if err != nil {
-		serr, ok := err.(*odataerrors.ODataError)
-		if ok {
-			terr := serr.GetError()
-			if terr != nil {
-				if strings.EqualFold(*terr.GetCode(), "ImageNotFound") {
-					return nil, nil
-				}
-			}
+		code, message := GetErrorCodeAndMessage(ctx, err)
+
+		if strings.EqualFold(code, ImageNotFoundCode) {
+			cloudy.Warn(ctx, "GetProfilePicture  %s - ImageNotFoundCode - %s", uid, message)
+			return nil, nil
 		}
+
+		return nil, cloudy.Error(ctx, "GetProfilePicture Error: %s %s", uid, message)
 	}
 
 	return photo, err
@@ -254,7 +249,7 @@ func (um *MsGraphUserManager) GetProfilePicture(ctx context.Context, uid string)
 
 // Associates a certificate ID as a second factor authentication
 func (um *MsGraphUserManager) GetCertificateMFA(ctx context.Context, uid string) ([]string, error) {
-	azUser, err := um.Client.UsersById(uid).Get(ctx,
+	azUser, err := um.Client.Users().ByUserId(uid).Get(ctx,
 		&users.UserItemRequestBuilderGetRequestConfiguration{
 			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
 				Select: DefaultUserSelectFields,
@@ -277,7 +272,7 @@ func (um *MsGraphUserManager) AssocateCerificateMFA(ctx context.Context, uid str
 		certId = fmt.Sprintf("X509:<PN>%v", certId)
 	}
 
-	azUser, err := um.Client.UsersById(uid).Get(ctx,
+	azUser, err := um.Client.Users().ByUserId(uid).Get(ctx,
 		&users.UserItemRequestBuilderGetRequestConfiguration{
 			QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
 				Select: DefaultUserSelectFields,
@@ -300,19 +295,19 @@ func (um *MsGraphUserManager) AssocateCerificateMFA(ctx context.Context, uid str
 
 	info.SetCertificateUserIds(newCertIds)
 
-	_, err = um.Client.UsersById(uid).Patch(ctx, azUser, nil)
+	_, err = um.Client.Users().ByUserId(uid).Patch(ctx, azUser, nil)
 	return err
 }
 
 func (um *MsGraphUserManager) Disable(ctx context.Context, uid string) error {
 	u := models.NewUser()
 	u.SetAccountEnabled(cloudy.BoolP(false))
-	_, err := um.Client.UsersById(uid).Patch(ctx, u, nil)
+	_, err := um.Client.Users().ByUserId(uid).Patch(ctx, u, nil)
 	return err
 }
 
 func (um *MsGraphUserManager) DeleteUser(ctx context.Context, uid string) error {
-	err := um.Client.UsersById(uid).Delete(ctx, nil)
+	err := um.Client.Users().ByUserId(uid).Delete(ctx, nil)
 	return err
 }
 
@@ -344,36 +339,16 @@ func (um *MsGraphUserManager) getUserWithCSA(ctx context.Context, uid string) (*
 		QueryParameters: requestParameters,
 	}
 
-	result, err := um.Client.UsersById(uid).Get(ctx, configuration)
+	result, err := um.Client.Users().ByUserId(uid).Get(ctx, configuration)
 	if err != nil {
-		oerr := err.(*odataerrors.ODataError)
-		message := *oerr.GetError().GetMessage()
-		return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
+		code, message := GetErrorCodeAndMessage(ctx, err)
+
+		if strings.EqualFold(code, ResourceNotFoundCode) {
+			return nil, cloudy.Error(ctx, "getUserWithCSA Error: %s - ResourceNotFound - %s", uid, message)
+		}
+
+		return nil, cloudy.Error(ctx, "getUserWithCSA Error: %s %s", uid, message)
 	}
 
-	// selectFields := append(DefaultUserSelectFields, "customSecurityAttributes")
-	// headers := abstractions.NewRequestHeaders()
-	// headers.Add("ConsistencyLevel", "eventual")
-
-	// result, err := um.Client.UsersById(uid).Get(ctx,
-	// 	&users.UserItemRequestBuilderGetRequestConfiguration{
-	// 		Headers: headers,
-	// 		QueryParameters: &users.UserItemRequestBuilderGetQueryParameters{
-	// 			Select: selectFields,
-	// 		},
-	// 	})
-	// if err != nil {
-
-	// 	oerr := err.(*odataerrors.ODataError)
-	// 	code := *oerr.GetError().GetCode()
-	// 	message := *oerr.GetError().GetMessage()
-
-	// 	if code == "Request_ResourceNotFound" {
-	// 		cloudy.Info(ctx, "GetUser: %s - Request_ResourceNotFound - %s", uid, message)
-	// 		return nil, nil
-	// 	}
-
-	// 	return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
-	// }
 	return UserToCloudy(result), nil
 }

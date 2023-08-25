@@ -3,6 +3,7 @@ package cloudymsgraph
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/appliedres/cloudy"
 	"github.com/appliedres/cloudy/models"
@@ -10,7 +11,6 @@ import (
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-beta-sdk-go/groups"
 	graphmodels "github.com/microsoftgraph/msgraph-beta-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
 )
 
 func init() {
@@ -46,14 +46,14 @@ type MsGraphGroupManager struct {
 // List all the groups available
 func (gm *MsGraphGroupManager) ListGroups(ctx context.Context) ([]*models.Group, error) {
 	cloudy.Info(ctx, "MsGraphGroupManager Listing Groups")
-	grps, err := gm.Client.Groups().Get(ctx, nil)
+	allGroups, err := gm.Client.Groups().Get(ctx, nil)
 	if err != nil {
 		_ = cloudy.Error(ctx, "MsGraphGroupManager error: %v", err)
 		return nil, err
 	}
 
 	cloudy.Info(ctx, "MsGraphGroupManager Creating Group array")
-	groups := grps.GetValue()
+	groups := allGroups.GetValue()
 	rtn := []*models.Group{}
 	for _, g := range groups {
 		rtn = append(rtn, GroupToCloudy(g))
@@ -67,15 +67,17 @@ func (gm *MsGraphGroupManager) ListGroups(ctx context.Context) ([]*models.Group,
 // Get all the groups for a single user
 func (gm *MsGraphGroupManager) GetUserGroups(ctx context.Context, uid string) ([]*cloudymodels.Group, error) {
 
-	// Does not apply to Get
-	// data := users.NewItemMicrosoftGraphGetMemberGroupsGetMemberGroupsPostRequestBody()
-	// data.SetSecurityEnabledOnly(cloudy.BoolP(false))
+	cloudy.Info(ctx, "GetUserGroups: %s", uid)
 
-	cloudy.Info(ctx, "Getting groups for user: %s", uid)
-
-	results, err := gm.Client.UsersById(uid).MemberOf().Get(context.Background(), nil)
+	results, err := gm.Client.Users().ByUserId(uid).MemberOf().Get(context.Background(), nil)
 	if err != nil {
-		return nil, err
+		code, message := GetErrorCodeAndMessage(ctx, err)
+
+		if strings.EqualFold(code, ResourceNotFoundCode) {
+			return nil, cloudy.Error(ctx, "GetUserGroups Error: %s - ResourceNotFound - %s", uid, message)
+		}
+
+		return nil, cloudy.Error(ctx, "GetUserGroups Error: %s %s", uid, message)
 	}
 
 	rtn := []*cloudymodels.Group{}
@@ -90,26 +92,26 @@ func (gm *MsGraphGroupManager) GetUserGroups(ctx context.Context, uid string) ([
 }
 
 func (gm *MsGraphGroupManager) DeleteGroup(ctx context.Context, groupId string) error {
-	return gm.Client.GroupsById(groupId).Delete(ctx, nil)
+	return gm.Client.Groups().ByGroupId(groupId).Delete(ctx, nil)
 }
 
 func (gm *MsGraphGroupManager) GetGroup(ctx context.Context, id string) (*models.Group, error) {
-	result, err := gm.Client.GroupsById(id).Get(ctx, nil)
+	result, err := gm.Client.Groups().ByGroupId(id).Get(ctx, nil)
 	if err != nil {
-		oerr := err.(*odataerrors.ODataError)
-		code := *oerr.GetError().GetCode()
+		code, message := GetErrorCodeAndMessage(ctx, err)
 
-		if code == "Request_ResourceNotFound" {
-			return nil, nil
+		if strings.EqualFold(code, ResourceNotFoundCode) {
+			return nil, cloudy.Error(ctx, "GetGroup Error: %s - ResourceNotFound - %s", id, message)
 		}
 
-		return nil, err
+		return nil, cloudy.Error(ctx, "GetGroup Error: %s %s", id, message)
 	}
+
 	return GroupToCloudy(result), nil
 }
 
 func (gm *MsGraphGroupManager) GetGroupId(ctx context.Context, name string) (string, error) {
-	cloudy.Info(ctx, "MsGraphGroupManager geet group id by display name %v", name)
+	cloudy.Info(ctx, "MsGraphGroupManager get group id by display name %v", name)
 	headers := abstractions.NewRequestHeaders()
 	headers.Add("ConsistencyLevel", "eventual")
 
@@ -125,11 +127,14 @@ func (gm *MsGraphGroupManager) GetGroupId(ctx context.Context, name string) (str
 
 	result, err := gm.Client.Groups().Get(ctx, configuration)
 	if err != nil {
-		oerr := err.(*odataerrors.ODataError)
-		code := *oerr.GetError().GetCode()
-		message := *oerr.GetError().GetMessage()
 
-		return "", fmt.Errorf("%v : %v", code, message)
+		code, message := GetErrorCodeAndMessage(ctx, err)
+
+		if strings.EqualFold(code, ResourceNotFoundCode) {
+			return "", cloudy.Error(ctx, "GetGroupId Error: %s - ResourceNotFound - %s", name, message)
+		}
+
+		return "", cloudy.Error(ctx, "GetGroupId Error: %s %s", name, message)
 	}
 
 	var rtn []*cloudymodels.Group
@@ -160,7 +165,7 @@ func (gm *MsGraphGroupManager) UpdateGroup(ctx context.Context, grp *models.Grou
 	g.SetId(&grp.ID)
 	g.SetDisplayName(&grp.Name)
 
-	_, err := gm.Client.GroupsById(grp.ID).Patch(ctx, g, nil)
+	_, err := gm.Client.Groups().ByGroupId(grp.ID).Patch(ctx, g, nil)
 	return true, err
 }
 
@@ -170,7 +175,7 @@ func (gm *MsGraphGroupManager) GetGroupMembers(ctx context.Context, grpId string
 
 	cloudy.Info(ctx, "MsGraphGroupManager GetGroupMembers grpId: %s", grpId)
 
-	result, err := gm.Client.GroupsById(grpId).Members().Get(ctx,
+	result, err := gm.Client.Groups().ByGroupId(grpId).Members().Get(ctx,
 		&groups.ItemMembersRequestBuilderGetRequestConfiguration{
 			QueryParameters: &groups.ItemMembersRequestBuilderGetQueryParameters{
 				Select: []string{
@@ -198,6 +203,8 @@ func (gm *MsGraphGroupManager) GetGroupMembers(ctx context.Context, grpId string
 
 	}
 
+	cloudy.Info(ctx, "MsGraphGroupManager GetGroupMembers grpId: %s found %d", grpId, len(rtn))
+
 	return rtn, nil
 }
 
@@ -207,7 +214,7 @@ func (gm *MsGraphGroupManager) RemoveMembers(ctx context.Context, groupId string
 
 	err := cloudy.MultiError()
 	for _, userId := range userIds {
-		oneErr := gm.Client.GroupsById(groupId).MembersById(userId).Ref().Delete(ctx, nil)
+		oneErr := gm.Client.Groups().ByGroupId(groupId).Members().ByDirectoryObjectId(userId).Ref().Delete(ctx, nil)
 		if oneErr != nil {
 			err.Append(oneErr)
 		}
@@ -252,7 +259,7 @@ func (gm *MsGraphGroupManager) AddMembers(ctx context.Context, groupId string, u
 		odataId := "https://graph.microsoft.com/v1.0/directoryObjects/" + userId
 		requestBody.SetOdataId(&odataId)
 
-		err := gm.Client.GroupsById(groupId).Members().Ref().Post(ctx, requestBody, nil)
+		err := gm.Client.Groups().ByGroupId(groupId).Members().Ref().Post(ctx, requestBody, nil)
 
 		if err != nil {
 			errs.Append(err)
