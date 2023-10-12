@@ -322,6 +322,7 @@ func (um *MsGraphUserManager) Disable(ctx context.Context, uid string) error {
 }
 
 func (um *MsGraphUserManager) DeleteUser(ctx context.Context, uid string) error {
+	cloudy.Info(ctx, "MsGraphUserManager DeleteUser")
 	err := um.Client.Users().ByUserId(uid).Delete(ctx, nil)
 	return err
 }
