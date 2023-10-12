@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"github.com/appliedres/cloudy"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models/odataerrors"
+	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
 )
 
+const BadRequest = "Request_BadRequest"
 const ResourceNotFoundCode = "Request_ResourceNotFound"
 const ImageNotFoundCode = "ImageNotFound"
 

@@ -7,7 +7,7 @@ import (
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
 	"github.com/go-openapi/strfmt"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
 var DefaultUserSelectFields = []string{

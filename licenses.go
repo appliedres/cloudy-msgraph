@@ -9,9 +9,9 @@ import (
 	"github.com/appliedres/cloudy/license"
 	cloudymodels "github.com/appliedres/cloudy/models"
 	"github.com/google/uuid"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/users"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/users"
 )
 
 func init() {

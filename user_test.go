@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	_ "github.com/appliedres/cloudy-azure"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
 func TestUserManager(t *testing.T) {

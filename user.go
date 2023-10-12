@@ -8,9 +8,9 @@ import (
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/models"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/users"
 	msgraphcore "github.com/microsoftgraph/msgraph-sdk-go-core"
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/users"
 )
 
 func init() {
@@ -68,12 +68,20 @@ func fromEnvironment(env *cloudy.Environment) *MsGraphConfig {
 
 func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels.User) (*cloudymodels.User, error) {
 
+	cloudy.Info(ctx, "MsGraphUserManager NewUser")
+
 	body := UserToAzure(newUser)
 	body.SetAccountEnabled(cloudy.BoolP(true))
 
 	user, err := um.Client.Users().Post(ctx, body, nil)
 	if err != nil {
-		return nil, err
+		code, message := GetErrorCodeAndMessage(ctx, err)
+
+		if strings.EqualFold(code, BadRequest) {
+			return nil, cloudy.Error(ctx, "NewUser: %s - BadRequest - %s", newUser.UPN, message)
+		} else {
+			return nil, cloudy.Error(ctx, "NewUser Error %s %v", message, err)
+		}
 	}
 
 	created := UserToCloudy(user)
@@ -197,6 +205,13 @@ func (um *MsGraphUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.
 	azUser := UserToAzure(usr)
 
 	_, err := um.Client.Users().ByUserId(usr.ID).Patch(ctx, azUser, nil)
+
+	if err != nil {
+		_, message := GetErrorCodeAndMessage(ctx, err)
+
+		return cloudy.Error(ctx, "UpdateUser Error %s", message)
+	}
+
 	return err
 }
 

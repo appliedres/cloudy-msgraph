@@ -12,7 +12,7 @@ import (
 	"github.com/appliedres/cloudy"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	a "github.com/microsoft/kiota-authentication-azure-go"
-	msgraphsdk "github.com/microsoftgraph/msgraph-beta-sdk-go"
+	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
 const MsGraphName = "msgraph"

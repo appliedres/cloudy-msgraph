@@ -9,8 +9,8 @@ import (
 	"github.com/appliedres/cloudy/models"
 	cloudymodels "github.com/appliedres/cloudy/models"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
-	"github.com/microsoftgraph/msgraph-beta-sdk-go/groups"
-	graphmodels "github.com/microsoftgraph/msgraph-beta-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/groups"
+	graphmodels "github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
 func init() {
