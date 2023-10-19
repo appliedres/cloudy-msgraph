@@ -202,9 +202,16 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 }
 
 func (um *MsGraphUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
-	azUser := UserToAzure(usr)
+	currentUser, err := um.GetUser(ctx, usr.ID)
+	if err != nil {
+		_, message := GetErrorCodeAndMessage(ctx, err)
 
-	_, err := um.Client.Users().ByUserId(usr.ID).Patch(ctx, azUser, nil)
+		return cloudy.Error(ctx, "UpdateUser Error %s", message)
+	}
+
+	azUser := UserToPatch(usr, currentUser)
+
+	_, err = um.Client.Users().ByUserId(usr.ID).Patch(ctx, azUser, nil)
 
 	if err != nil {
 		_, message := GetErrorCodeAndMessage(ctx, err)

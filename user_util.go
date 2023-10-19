@@ -114,6 +114,59 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 	return u
 }
 
+func UserToPatch(user *cloudymodels.User, currentUser *cloudymodels.User) *models.User {
+
+	u := models.NewUser()
+	u.SetId(&user.ID)
+
+	if user.FirstName != currentUser.FirstName {
+		u.SetGivenName(&user.FirstName)
+	}
+
+	if user.LastName != currentUser.LastName {
+		u.SetSurname(&user.LastName)
+	}
+
+	if user.JobTitle != currentUser.JobTitle {
+		u.SetJobTitle(&user.JobTitle)
+	}
+
+	if user.MobilePhone != currentUser.MobilePhone {
+		u.SetMobilePhone(&user.MobilePhone)
+	}
+
+	if user.Department != currentUser.Department {
+		u.SetDepartment(&user.Department)
+	}
+
+	// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed
+	if user.AccountType != currentUser.AccountType || user.Citizenship != currentUser.Citizenship ||
+		user.ContractDate != currentUser.ContractDate || user.ContractNumber != currentUser.ContractNumber {
+		cloudyattr := make(map[string]interface{})
+
+		odata := "#Microsoft.DirectoryServices.CustomSecurityAttributeValue"
+		cloudyattr["@odata.type"] = &odata
+		if user.AccountType != currentUser.AccountType {
+			cloudyattr["AccountType"] = &user.AccountType
+		}
+		if user.Citizenship != currentUser.Citizenship {
+			cloudyattr["Citizenship"] = &user.Citizenship
+		}
+		if user.ContractDate != currentUser.ContractDate {
+			cloudyattr["ContractExpirationDate"] = &user.ContractDate
+		}
+		if user.ContractNumber != currentUser.ContractNumber {
+			cloudyattr["ContractNumber"] = &user.ContractNumber
+		}
+
+		customSecurityAttributes := models.NewCustomSecurityAttributeValue()
+		customSecurityAttributes.GetAdditionalData()["cloudy"] = cloudyattr
+		u.SetCustomSecurityAttributes(customSecurityAttributes)
+	}
+
+	return u
+}
+
 func UserToCloudy(user models.Userable) *cloudymodels.User {
 	u := &cloudymodels.User{}
 
