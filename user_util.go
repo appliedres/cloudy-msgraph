@@ -1,8 +1,10 @@
 package cloudymsgraph
 
 import (
+	"context"
 	b64 "encoding/base64"
 	"encoding/json"
+	"strings"
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
@@ -45,7 +47,10 @@ type UserCustomSecurityAttributes struct {
 
 func UserToAzure(user *cloudymodels.User) *models.User {
 	u := models.NewUser()
-	u.SetId(&user.ID)
+
+	if !strings.EqualFold(user.ID, "") {
+		u.SetId(&user.ID)
+	}
 
 	u.SetUserPrincipalName(&user.UPN)
 	u.SetDisplayName(&user.DisplayName)
@@ -294,4 +299,24 @@ func readCustomAttributeStr(user models.Userable, category string, attrName stri
 		}
 	}
 	return nil
+}
+
+func UpdateAzUser(ctx context.Context, azUser models.Userable, cUser *cloudymodels.User) {
+
+	if azUser.GetId() == nil || !strings.EqualFold(*azUser.GetId(), cUser.ID) {
+		azUser.SetId(&cUser.ID)
+	}
+
+	if azUser.GetSurname() == nil || !strings.EqualFold(*azUser.GetSurname(), cUser.FirstName) {
+		if azUser.GetSurname() == nil {
+			silly := ""
+			azUser.SetSurname(&silly)
+		}
+		azUser.SetSurname(&cUser.FirstName)
+	}
+
+	if azUser.GetGivenName() == nil || !strings.EqualFold(*azUser.GetGivenName(), cUser.LastName) {
+		azUser.SetGivenName(&cUser.LastName)
+	}
+
 }

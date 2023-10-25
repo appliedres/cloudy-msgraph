@@ -11,13 +11,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/appliedres/cloudy"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
-	a "github.com/microsoft/kiota-authentication-azure-go"
+	msauth "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
 const MsGraphName = "msgraph"
-const MsGraphVersionV1 = "v1.0"
-const MsGraphVersionBeta = "beta"
 
 var ErrInvalidInstanceName = errors.New("invalid instance name")
 
@@ -45,25 +43,24 @@ type MsGraphConfig struct {
 	ClientSecret string
 	Region       string
 	APIBase      string
-	Version      string
 	SelectFields []string
 }
 
-func (azcfg *MsGraphConfig) SetInstanceName(name string) error {
+func (azConfig *MsGraphConfig) SetInstanceName(name string) error {
 	if strings.EqualFold(name, USGovernment.Name) {
-		azcfg.SetInstance(&USGovernment)
+		azConfig.SetInstance(&USGovernment)
 		return nil
 	} else if strings.EqualFold(name, AzurePublic.Name) {
-		azcfg.SetInstance(&AzurePublic)
+		azConfig.SetInstance(&AzurePublic)
 		return nil
 	}
 
 	return ErrInvalidInstanceName
 }
 
-func (azcfg *MsGraphConfig) SetInstance(instance *MsGraphInstance) {
-	azcfg.APIBase = instance.Base
-	azcfg.Region = instance.Login
+func (azConfig *MsGraphConfig) SetInstance(instance *MsGraphInstance) {
+	azConfig.APIBase = instance.Base
+	azConfig.Region = instance.Login
 }
 
 type MsGraph struct {
@@ -72,24 +69,21 @@ type MsGraph struct {
 	Cfg     *MsGraphConfig
 }
 
-func (azum *MsGraph) Configure(azCfg *MsGraphConfig) error {
-	if azCfg == nil || azCfg.ClientID == "" {
+func (azUM *MsGraph) Configure(azConfig *MsGraphConfig) error {
+	if azConfig == nil || azConfig.ClientID == "" {
 		return cloudy.ErrInvalidConfiguration
 	}
 
-	if azCfg.Version == "" {
-		azCfg.Version = MsGraphVersionV1
+	if azConfig.Region == "" {
+		azConfig.SetInstance(&AzurePublic)
 	}
-	if azCfg.Region == "" {
-		azCfg.SetInstance(&AzurePublic)
-	}
-	if azCfg.SelectFields == nil {
-		azCfg.SelectFields = DefaultUserSelectFields
+	if azConfig.SelectFields == nil {
+		azConfig.SelectFields = DefaultUserSelectFields
 	}
 
 	scopes := []string{"https://graph.microsoft.us/.default"}
 
-	cred, err := azidentity.NewClientSecretCredential(azCfg.TenantID, azCfg.ClientID, azCfg.ClientSecret,
+	cred, err := azidentity.NewClientSecretCredential(azConfig.TenantID, azConfig.ClientID, azConfig.ClientSecret,
 		&azidentity.ClientSecretCredentialOptions{
 			ClientOptions: policy.ClientOptions{
 				Cloud: cloud.AzureGovernment,
@@ -100,7 +94,7 @@ func (azum *MsGraph) Configure(azCfg *MsGraphConfig) error {
 		fmt.Printf("MsGraph Configure Error authentication provider: %v\n", err)
 		return err
 	}
-	auth, err := a.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
+	auth, err := msauth.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
 	if err != nil {
 		fmt.Printf("MsGraph Configure Error authentication provider: %v\n", err)
 		return err
@@ -111,11 +105,11 @@ func (azum *MsGraph) Configure(azCfg *MsGraphConfig) error {
 		return err
 	}
 
-	adapter.SetBaseUrl(azCfg.APIBase)
+	adapter.SetBaseUrl(azConfig.APIBase)
 
-	azum.Cfg = azCfg
-	azum.Adapter = adapter
-	azum.Client = msgraphsdk.NewGraphServiceClient(adapter)
+	azUM.Cfg = azConfig
+	azUM.Adapter = adapter
+	azUM.Client = msgraphsdk.NewGraphServiceClient(adapter)
 
 	return err
 }
@@ -150,7 +144,7 @@ func NewGraph(ctx context.Context, tenantID string, clientID string, clientSecre
 		fmt.Printf("NewGraph Error authentication provider: %v\n", err)
 		return nil, err
 	}
-	auth, err := a.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
+	auth, err := msauth.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
 	if err != nil {
 		fmt.Printf("NewGraph Error authentication provider: %v\n", err)
 		return nil, err

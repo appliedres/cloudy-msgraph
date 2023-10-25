@@ -68,7 +68,7 @@ func fromEnvironment(env *cloudy.Environment) *MsGraphConfig {
 
 func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels.User) (*cloudymodels.User, error) {
 
-	cloudy.Info(ctx, "MsGraphUserManager NewUser")
+	cloudy.Info(ctx, "[%s] MsGraphUserManager NewUser", newUser.UPN)
 
 	body := UserToAzure(newUser)
 	body.SetAccountEnabled(cloudy.BoolP(true))
@@ -78,9 +78,9 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 		code, message := GetErrorCodeAndMessage(ctx, err)
 
 		if strings.EqualFold(code, BadRequest) {
-			return nil, cloudy.Error(ctx, "NewUser: %s - BadRequest - %s", newUser.UPN, message)
+			return nil, cloudy.Error(ctx, "[%s] NewUser - BadRequest - %s", newUser.UPN, message)
 		} else {
-			return nil, cloudy.Error(ctx, "NewUser Error %s %v", message, err)
+			return nil, cloudy.Error(ctx, "[%s] NewUser - %s - Error: %v", newUser.UPN, message, err)
 		}
 	}
 
@@ -89,7 +89,7 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 }
 
 func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
-	cloudy.Info(ctx, "GetUser: %s", uid)
+	cloudy.Info(ctx, "[%s] GetUser", uid)
 	headers := abstractions.NewRequestHeaders()
 	headers.Add("ConsistencyLevel", "eventual")
 
@@ -106,11 +106,11 @@ func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudym
 		code, message := GetErrorCodeAndMessage(ctx, err)
 
 		if strings.EqualFold(code, ResourceNotFoundCode) {
-			cloudy.Info(ctx, "GetUser: %s - ResourceNotFound - %s", uid, message)
+			cloudy.Info(ctx, "[%s] GetUser - ResourceNotFound - %s", uid, message)
 			return nil, nil
 		}
 
-		return nil, cloudy.Error(ctx, "GetUser: %s - error: %v", uid, message)
+		return nil, cloudy.Error(ctx, "[%s] GetUser - error: %v", uid, message)
 	}
 
 	return UserToCloudy(result), nil
@@ -202,21 +202,27 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 }
 
 func (um *MsGraphUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
+	if strings.EqualFold(usr.ID, "") {
+		return cloudy.Error(ctx, "Not user id set. Cannot update user: %v", usr)
+	}
+
 	currentUser, err := um.GetUser(ctx, usr.ID)
 	if err != nil {
 		_, message := GetErrorCodeAndMessage(ctx, err)
 
-		return cloudy.Error(ctx, "UpdateUser Error %s", message)
+		return cloudy.Error(ctx, "UpdateUser Get Error %s", message)
 	}
 
 	azUser := UserToPatch(usr, currentUser)
+
+	cloudy.Info(ctx, "Updating user with ID: %s (%s)", currentUser.ID, currentUser.UPN)
 
 	_, err = um.Client.Users().ByUserId(usr.ID).Patch(ctx, azUser, nil)
 
 	if err != nil {
 		_, message := GetErrorCodeAndMessage(ctx, err)
 
-		return cloudy.Error(ctx, "UpdateUser Error %s", message)
+		return cloudy.Error(ctx, "UpdateUser Patch Error %s", message)
 	}
 
 	return err
@@ -348,7 +354,7 @@ func (um *MsGraphUserManager) ForceUserName(ctx context.Context, name string) (s
 }
 
 func (um *MsGraphUserManager) getUserWithCSA(ctx context.Context, uid string) (*cloudymodels.User, error) {
-	cloudy.Info(ctx, "GetUser: %s", uid)
+	cloudy.Info(ctx, "[%s] getUserWithCSA", uid)
 
 	selectFields := append(DefaultUserSelectFields, "customSecurityAttributes")
 	headers := abstractions.NewRequestHeaders()
