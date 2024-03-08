@@ -92,31 +92,70 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 		u.SetPasswordProfile(profile)
 	}
 
-	// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed
-	if user.AccountType != "" || user.Citizenship != "" || user.ContractDate != "" || user.ContractNumber != "" {
-		cloudyattr := make(map[string]interface{})
+	customSecurityAttributes := ParseUserCustomSecurityAttributes(user)
 
-		odata := "#Microsoft.DirectoryServices.CustomSecurityAttributeValue"
-		cloudyattr["@odata.type"] = &odata
-		if user.AccountType != "" {
-			cloudyattr["AccountType"] = &user.AccountType
-		}
-		if user.Citizenship != "" {
-			cloudyattr["Citizenship"] = &user.Citizenship
-		}
-		if user.ContractDate != "" {
-			cloudyattr["ContractExpirationDate"] = &user.ContractDate
-		}
-		if user.ContractNumber != "" {
-			cloudyattr["ContractNumber"] = &user.ContractNumber
-		}
-
-		customSecurityAttributes := models.NewCustomSecurityAttributeValue()
-		customSecurityAttributes.GetAdditionalData()["cloudy"] = cloudyattr
+	if customSecurityAttributes != nil {
 		u.SetCustomSecurityAttributes(customSecurityAttributes)
 	}
 
 	return u
+}
+
+func ParseUserCustomSecurityAttributes(user *cloudymodels.User) *models.CustomSecurityAttributeValue {
+	hasCustomSecurityAttributes := false
+
+	// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed
+	cloudyattr := make(map[string]interface{})
+
+	if user.AccountType != "" {
+		cloudyattr["AccountType"] = &user.AccountType
+		hasCustomSecurityAttributes = true
+	}
+
+	if user.Citizenship != "" {
+		cloudyattr["Citizenship"] = &user.Citizenship
+		hasCustomSecurityAttributes = true
+	}
+
+	if user.ContractDate != "" {
+		cloudyattr["ContractExpirationDate"] = &user.ContractDate
+		hasCustomSecurityAttributes = true
+	}
+
+	if user.ContractNumber != "" {
+		cloudyattr["ContractNumber"] = &user.ContractNumber
+		hasCustomSecurityAttributes = true
+	}
+
+	if user.Organization != "" {
+		cloudyattr["Organization"] = &user.Organization
+		hasCustomSecurityAttributes = true
+	}
+
+	if user.Project != "" {
+		cloudyattr["Project"] = &user.Project
+		hasCustomSecurityAttributes = true
+	}
+
+	if user.ProgramRole != "" {
+		cloudyattr["ProgramRole"] = &user.ProgramRole
+		hasCustomSecurityAttributes = true
+	}
+
+	if hasCustomSecurityAttributes {
+
+		customSecurityAttributes := models.NewCustomSecurityAttributeValue()
+
+		odata := "#microsoft.graph.customSecurityAttributeValue"
+		// odata := "#Microsoft.DirectoryServices.CustomSecurityAttributeValue"
+		cloudyattr["@odata.type"] = &odata
+
+		customSecurityAttributes.GetAdditionalData()["cloudy"] = cloudyattr
+
+		return customSecurityAttributes
+	}
+
+	return nil
 }
 
 func UserToPatch(user *cloudymodels.User, currentUser *cloudymodels.User) *models.User {
@@ -144,28 +183,9 @@ func UserToPatch(user *cloudymodels.User, currentUser *cloudymodels.User) *model
 		u.SetDepartment(&user.Department)
 	}
 
-	// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed
-	if user.AccountType != currentUser.AccountType || user.Citizenship != currentUser.Citizenship ||
-		user.ContractDate != currentUser.ContractDate || user.ContractNumber != currentUser.ContractNumber {
-		cloudyattr := make(map[string]interface{})
+	customSecurityAttributes := ParseUserCustomSecurityAttributes(user)
 
-		odata := "#Microsoft.DirectoryServices.CustomSecurityAttributeValue"
-		cloudyattr["@odata.type"] = &odata
-		if user.AccountType != currentUser.AccountType {
-			cloudyattr["AccountType"] = &user.AccountType
-		}
-		if user.Citizenship != currentUser.Citizenship {
-			cloudyattr["Citizenship"] = &user.Citizenship
-		}
-		if user.ContractDate != currentUser.ContractDate {
-			cloudyattr["ContractExpirationDate"] = &user.ContractDate
-		}
-		if user.ContractNumber != currentUser.ContractNumber {
-			cloudyattr["ContractNumber"] = &user.ContractNumber
-		}
-
-		customSecurityAttributes := models.NewCustomSecurityAttributeValue()
-		customSecurityAttributes.GetAdditionalData()["cloudy"] = cloudyattr
+	if customSecurityAttributes != nil {
 		u.SetCustomSecurityAttributes(customSecurityAttributes)
 	}
 
@@ -242,30 +262,43 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		}
 	}
 
-	if user.GetCustomSecurityAttributes() != nil && user.GetCustomSecurityAttributes().GetAdditionalData() != nil {
+	allAttributes := readAllCustomSecurityAttributes(user, "cloudy")
+	if allAttributes != nil {
 
 		// Read the Contract Number
-		contractNumber := readCustomAttributeStr(user, "cloudy", "ContractNumber")
-		if contractNumber != nil {
+		contractNumber, exists := allAttributes["ContractNumber"]
+		if exists && contractNumber != nil {
 			u.ContractNumber = *contractNumber
 		}
 
 		// Read the Contract Date
-		contractDate := readCustomAttributeStr(user, "cloudy", "ContractExpirationDate")
-		if contractDate != nil {
+		contractDate, exists := allAttributes["ContractExpirationDate"]
+		if exists && contractDate != nil {
 			u.ContractDate = *contractDate
 		}
 
 		// Read the Account Type
-		acctType := readCustomAttributeStr(user, "cloudy", "AccountType")
-		if acctType != nil {
-			u.AccountType = *acctType
+		accountType, exists := allAttributes["AccountType"]
+		if exists && accountType != nil {
+			u.AccountType = *accountType
 		}
 
 		// Read the Citizenship
-		citizenship := readCustomAttributeStr(user, "cloudy", "Citizenship")
-		if citizenship != nil {
+		citizenship, exists := allAttributes["Citizenship"]
+		if exists && citizenship != nil {
 			u.Citizenship = *citizenship
+		}
+
+		// Read the Citizenship
+		organization, exists := allAttributes["Organization"]
+		if exists && organization != nil {
+			u.Organization = *organization
+		}
+
+		// Read the Citizenship
+		programRole, exists := allAttributes["ProgramRole"]
+		if exists && programRole != nil {
+			u.ProgramRole = *programRole
 		}
 
 	} else if user.GetStreetAddress() != nil {
@@ -285,19 +318,43 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 	return u
 }
 
-func readCustomAttributeStr(user models.Userable, category string, attrName string) *string {
-	if user.GetCustomSecurityAttributes() != nil && user.GetCustomSecurityAttributes().GetAdditionalData() != nil {
-		attr := user.GetCustomSecurityAttributes().GetAdditionalData()
-		attrCatMap := attr[category]
-		if attrCatMap != nil && attrCatMap.(map[string]interface{}) != nil {
-			cloudyAttrMap := attrCatMap.(map[string]interface{})
+func readAllCustomSecurityAttributes(user models.Userable, attributeSet string) map[string]*string {
+	allAttributes := make(map[string]*string)
 
-			val := cloudyAttrMap[attrName]
-			if val != nil && val.(*string) != nil {
-				return val.(*string)
+	if user.GetCustomSecurityAttributes() != nil && user.GetCustomSecurityAttributes().GetAdditionalData() != nil {
+		attrs := user.GetCustomSecurityAttributes().GetAdditionalData()
+
+		attributeSetMap := attrs[attributeSet]
+		if attributeSetMap != nil && attributeSetMap.(map[string]interface{}) != nil {
+			attributeSetMap := attributeSetMap.(map[string]interface{})
+			for attributeName := range attributeSetMap {
+
+				attributeValue := attributeSetMap[attributeName]
+				if attributeValue != nil && attributeValue.(*string) != nil {
+					allAttributes[attributeName] = attributeValue.(*string)
+				} else {
+					allAttributes[attributeName] = nil
+				}
 			}
+
+			return allAttributes
 		}
 	}
+
+	return nil
+}
+
+func readCustomAttributeStr(user models.Userable, attributeSet string, attributeName string) *string {
+
+	allAttributes := readAllCustomSecurityAttributes(user, attributeSet)
+	if allAttributes != nil {
+
+		attributeValue, exists := allAttributes[attributeName]
+		if exists && attributeValue != nil {
+			return attributeValue
+		}
+	}
+
 	return nil
 }
 

@@ -92,7 +92,7 @@ func TestGetUserByEmail(t *testing.T) {
 func TestGetUserToAzure(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := testutil.CreateTestEnvironment()
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -105,7 +105,7 @@ func TestGetUserToAzure(t *testing.T) {
 		log.Fatalf("Error %v", err)
 	}
 
-	u, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
+	u, err := um.GetUser(ctx, "adam.dyer@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
