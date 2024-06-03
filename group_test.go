@@ -12,17 +12,16 @@ import (
 func TestGroupManager(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
-	cloudy.SetDefaultEnvironment(env)
+	em := cloudy.GetDefaultEnvManager()
+	em.LoadSources("test")
 
-	msgraphCreds := env.LoadCredentials("MSGRAPH")
-	um, err := cloudy.UserProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "USER"), "DRIVER")
+	um, err := cloudy.UserProviders.NewFromEnvMgr(em, "USER_DRIVER")
 	if err != nil {
 		log.Fatalf("Could not instantiate the user manager. %v", err)
 	}
 
 	// Get the default group Manager
-	gm, err := cloudy.GroupProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "GROUP"), "DRIVER")
+	gm, err := cloudy.GroupProviders.NewFromEnvMgr(em, "GROUP_DRIVER")
 	if err != nil {
 		log.Fatalf("Could not instantiate the group manager. %v", err)
 	}
@@ -35,13 +34,12 @@ func TestListGroups(t *testing.T) {
 
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
-	cloudy.SetDefaultEnvironment(env)
+	em := cloudy.GetDefaultEnvManager()
+	em.LoadSources("test")
 
 	ctx := cloudy.StartContext()
 
-	msgraphCreds := env.LoadCredentials("MSGRAPH")
-	gm, err := cloudy.GroupProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "GROUP"), "DRIVER")
+	gm, err := cloudy.GroupProviders.NewFromEnvMgr(em, "GROUP_DRIVER")
 	if err != nil {
 		log.Fatalf("Could not instantiate the group manager. %v", err)
 	}
@@ -59,13 +57,12 @@ func TestListUserGroups(t *testing.T) {
 
 	email := "test.user@collider.onmicrosoft.us"
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
-	cloudy.SetDefaultEnvironment(env)
+	em := cloudy.GetDefaultEnvManager()
+	em.LoadSources("test")
 
 	ctx := cloudy.StartContext()
 
-	msgraphCreds := env.LoadCredentials("MSGRAPH")
-	gm, err := cloudy.GroupProviders.NewFromEnv(env.SegmentWithCreds(msgraphCreds, "GROUP"), "DRIVER")
+	gm, err := cloudy.GroupProviders.NewFromEnvMgr(em, "GROUP_DRIVER")
 	if err != nil {
 		log.Fatalf("Could not instantiate the group manager. %v", err)
 	}
@@ -81,13 +78,13 @@ func TestGetGroupId(t *testing.T) {
 
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
-	cloudy.SetDefaultEnvironment(env)
+	em := cloudy.GetDefaultEnvManager()
+	em.LoadSources("test")
 
 	ctx := cloudy.StartContext()
 
 	loader := MSGraphCredentialLoader{}
-	cfg := loader.ReadFromEnv(env).(*MsGraphConfig)
+	cfg := loader.ReadFromEnvMgr(em).(*MsGraphConfig)
 
 	gm, err := NewMsGraphGroupManager(ctx, cfg)
 	if err != nil {

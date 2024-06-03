@@ -10,14 +10,14 @@ const MSGraphCredentialsKey = "msgraph"
 
 type MSGraphCredentialLoader struct{}
 
-func (loader *MSGraphCredentialLoader) ReadFromEnv(env *cloudy.Environment) interface{} {
+func (loader *MSGraphCredentialLoader) ReadFromEnvMgr(em *cloudy.EnvManager) interface{} {
 	cfg := &MsGraphConfig{}
 
-	cfg.TenantID = env.Force("AZ_TENANT_ID")
-	cfg.ClientID = env.Force("AZ_CLIENT_ID")
-	cfg.ClientSecret = env.Force("AZ_CLIENT_SECRET")
-	cfg.Region = env.Default("AZ_REGION", "usgovvirginia")
-	cfg.APIBase = env.Default("AZ_API_BASE", "https://graph.microsoft.us/v1.0")
+	cfg.TenantID = em.GetVar("AZ_TENANT_ID")
+	cfg.ClientID = em.GetVar("AZ_CLIENT_ID")
+	cfg.ClientSecret = em.GetVar("AZ_CLIENT_SECRET")
+	cfg.Region = em.GetVar("AZ_REGION")
+	cfg.APIBase = em.GetVar("AZ_API_BASE")
 
 	if cfg.TenantID == "" || cfg.ClientID == "" || cfg.ClientSecret == "" {
 		return nil

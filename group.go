@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	cloudy.GroupProviders.Register(MsGraphName, &MsGraphGroupManagerFactory{})
+	cloudy.GroupProviders.Register(MsGraphName, &MsGraphGroupManagerFactory{}, []cloudy.EnvDefinition{})
 }
 
 type MsGraphGroupManagerFactory struct {
@@ -34,8 +34,8 @@ func (ms *MsGraphGroupManagerFactory) Create(cfg interface{}) (cloudy.GroupManag
 	return NewMsGraphGroupManager(context.Background(), cfg.(*MsGraphConfig))
 }
 
-func (ms *MsGraphGroupManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
-	cfg := fromEnvironment(env)
+func (ms *MsGraphGroupManagerFactory) FromEnvMgr(em *cloudy.EnvManager, prefix string) (interface{}, error) {
+	cfg := fromEnvironment(em)
 	return cfg, nil
 }
 

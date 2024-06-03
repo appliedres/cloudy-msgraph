@@ -14,7 +14,36 @@ import (
 )
 
 func init() {
-	cloudy.UserProviders.Register(MsGraphName, &MsGraphUserManagerFactory{})
+	requiredEnvDefs := []cloudy.EnvDefinition{
+		{
+			Name:         "AZ_TENANT_ID",
+			Description:  "",
+			DefaultValue: "",
+			Keys:         []string{"AZ_TENANT_ID"},
+		}, {
+			Name:         "AZ_CLIENT_ID",
+			Description:  "",
+			DefaultValue: "",
+			Keys:         []string{"AZ_CLIENT_ID"},
+		}, {
+			Name:         "AZ_CLIENT_SECRET",
+			Description:  "",
+			DefaultValue: "",
+			Keys:         []string{"AZ_CLIENT_SECRET"},
+		}, {
+			Name:         "AZ_REGION",
+			Description:  "",
+			DefaultValue: "",
+			Keys:         []string{"AZ_REGION"},
+		}, {
+			Name:         "AZ_API_BASE",
+			Description:  "",
+			DefaultValue: "https://graph.microsoft.us/v1.0",
+			Keys:         []string{"AZ_API_BASE"},
+		},
+	}
+
+	cloudy.UserProviders.Register("msgraph", &MsGraphUserManagerFactory{}, requiredEnvDefs)
 }
 
 type MsGraphUserManagerFactory struct {
@@ -25,8 +54,8 @@ func (umf *MsGraphUserManagerFactory) Create(cfg interface{}) (cloudy.UserManage
 	return NewMsGraphUserManager(context.Background(), cfg.(*MsGraphConfig))
 }
 
-func (umf *MsGraphUserManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
-	cfg := fromEnvironment(env)
+func (umf *MsGraphUserManagerFactory) FromEnvMgr(em *cloudy.EnvManager, prefix string) (interface{}, error) {
+	cfg := fromEnvironment(em)
 	return cfg, nil
 }
 
@@ -43,25 +72,26 @@ func NewMsGraphUserManager(ctx context.Context, cfg *MsGraphConfig) (*MsGraphUse
 	return um, err
 }
 
-func NewMsGraphUserManagerFromEnv(ctx context.Context, env *cloudy.Environment) (*MsGraphUserManager, error) {
+func NewMsGraphUserManagerFromEnvMgr(ctx context.Context, em *cloudy.EnvManager) (*MsGraphUserManager, error) {
 	fact := &MsGraphUserManagerFactory{}
-	cfg, _ := fact.FromEnv(env)
+	cfg, _ := fact.FromEnvMgr(em, "")
 	return NewMsGraphUserManager(ctx, cfg.(*MsGraphConfig))
 }
 
-func fromEnvironment(env *cloudy.Environment) *MsGraphConfig {
-	creds := env.GetCredential(MSGraphCredentialsKey)
-	if creds != nil {
-		return creds.(*MsGraphConfig)
-	}
+func fromEnvironment(em *cloudy.EnvManager) *MsGraphConfig {
+	// TODO: enable creds?
+	// creds := env.GetCredential(MSGraphCredentialsKey)
+	// if creds != nil {
+	// 	return creds.(*MsGraphConfig)
+	// }
 
 	cfg := &MsGraphConfig{}
 
-	cfg.TenantID = env.Force("AZ_TENANT_ID")
-	cfg.ClientID = env.Force("AZ_CLIENT_ID")
-	cfg.ClientSecret = env.Force("AZ_CLIENT_SECRET")
-	cfg.Region = env.Default("AZ_REGION", "usgovvirginia")
-	cfg.APIBase = env.Default("AZ_API_BASE", "https://graph.microsoft.us/v1.0")
+	cfg.TenantID = em.GetVar("AZ_TENANT_ID")
+	cfg.ClientID = em.GetVar("AZ_CLIENT_ID")
+	cfg.ClientSecret = em.GetVar("AZ_CLIENT_SECRET")
+	cfg.Region = em.GetVar("AZ_REGION")
+	cfg.APIBase = em.GetVar("AZ_API_BASE")
 
 	return cfg
 }

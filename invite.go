@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	cloudy.InviteProviders.Register(MsGraphName, &MsGraphInviteManagerFactory{})
+	cloudy.InviteProviders.Register(MsGraphName, &MsGraphInviteManagerFactory{}, []cloudy.EnvDefinition{})
 }
 
 type MsGraphInviteManagerFactory struct {
@@ -29,8 +29,8 @@ func (ms *MsGraphInviteManagerFactory) Create(cfg interface{}) (cloudy.InviteMan
 	return NewMsGraphInviteManager(context.Background(), cfg.(*MsGraphConfig))
 }
 
-func (ms *MsGraphInviteManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
-	cfg := fromEnvironment(env)
+func (ms *MsGraphInviteManagerFactory) FromEnvMgr(em *cloudy.EnvManager, prefix string) (interface{}, error) {
+	cfg := fromEnvironment(em)
 	return cfg, nil
 }
 

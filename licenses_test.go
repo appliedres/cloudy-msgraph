@@ -11,12 +11,10 @@ import (
 func TestLicenseManager(t *testing.T) {
 	ctx := cloudy.StartContext()
 
-	env := testutil.CreateTestEnvironment()
-	cloudy.SetDefaultEnvironment(env)
+	em := testutil.CreateTestEnvMgr()
 
-	testEnv := env.Segment("TEST")
 	loader := MSGraphCredentialLoader{}
-	cfg := loader.ReadFromEnv(testEnv).(*MsGraphConfig)
+	cfg := loader.ReadFromEnvMgr(em).(*MsGraphConfig)
 	cfg.SetInstance(&USGovernment)
 
 	TestUser := "unittest@collider.onmicrosoft.us"

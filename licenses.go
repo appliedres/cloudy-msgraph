@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	license.LicenseProviders.Register(MsGraphName, &MsGraphLicenseManagerFactory{})
+	license.LicenseProviders.Register(MsGraphName, &MsGraphLicenseManagerFactory{}, []cloudy.EnvDefinition{})
 }
 
 type MsGraphLicenseManager struct {
@@ -46,8 +46,8 @@ func (lm *MsGraphLicenseManagerFactory) Create(cfg interface{}) (license.License
 	return NewMsGraphLicenseManager(context.Background(), cfg.(*MsGraphConfig))
 }
 
-func (lm *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.Environment) (interface{}, error) {
-	cfg := fromEnvironment(env)
+func (lm *MsGraphLicenseManagerFactory) FromEnvMgr(em *cloudy.EnvManager, prefix string) (interface{}, error) {
+	cfg := fromEnvironment(em)
 	return cfg, nil
 }
 
