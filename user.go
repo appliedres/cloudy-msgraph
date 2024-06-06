@@ -16,30 +16,30 @@ import (
 func init() {
 	requiredEnvDefs := []cloudy.EnvDefinition{
 		{
-			Name:         "AZ_TENANT_ID",
+			Name:         "MSGRAPH_AZ_TENANT_ID",
 			Description:  "",
 			DefaultValue: "",
-			Keys:         []string{"AZ_TENANT_ID"},
+			Keys:         []string{"MSGRAPH_AZ_TENANT_ID"},
 		}, {
-			Name:         "AZ_CLIENT_ID",
+			Name:         "MSGRAPH_AZ_CLIENT_ID",
 			Description:  "",
 			DefaultValue: "",
-			Keys:         []string{"AZ_CLIENT_ID"},
+			Keys:         []string{"MSGRAPH_AZ_CLIENT_ID"},
 		}, {
-			Name:         "AZ_CLIENT_SECRET",
+			Name:         "MSGRAPH_AZ_CLIENT_SECRET",
 			Description:  "",
 			DefaultValue: "",
-			Keys:         []string{"AZ_CLIENT_SECRET"},
+			Keys:         []string{"MSGRAPH_AZ_CLIENT_SECRET"},
 		}, {
-			Name:         "AZ_REGION",
+			Name:         "MSGAPH Azure Region",
 			Description:  "",
 			DefaultValue: "",
-			Keys:         []string{"AZ_REGION"},
+			Keys:         []string{"MSGRAPH_AZ_REGION"},
 		}, {
-			Name:         "AZ_API_BASE",
+			Name:         "MSGRAPH_AZ_API_BASE",
 			Description:  "",
 			DefaultValue: "https://graph.microsoft.us/v1.0",
-			Keys:         []string{"AZ_API_BASE"},
+			Keys:         []string{"MSGRAPH_AZ_API_BASE"},
 		},
 	}
 
@@ -87,11 +87,11 @@ func fromEnvironment(em *cloudy.EnvManager) *MsGraphConfig {
 
 	cfg := &MsGraphConfig{}
 
-	cfg.TenantID = em.GetVar("AZ_TENANT_ID")
-	cfg.ClientID = em.GetVar("AZ_CLIENT_ID")
-	cfg.ClientSecret = em.GetVar("AZ_CLIENT_SECRET")
-	cfg.Region = em.GetVar("AZ_REGION")
-	cfg.APIBase = em.GetVar("AZ_API_BASE")
+	cfg.TenantID = em.GetVar("MSGRAPH_AZ_TENANT_ID")
+	cfg.ClientID = em.GetVar("MSGRAPH_AZ_CLIENT_ID")
+	cfg.ClientSecret = em.GetVar("MSGRAPH_AZ_CLIENT_SECRET")
+	cfg.Region = em.GetVar("MSGRAPH_AZ_REGION")
+	cfg.APIBase = em.GetVar("MSGRAPH_AZ_API_BASE")
 
 	return cfg
 }
