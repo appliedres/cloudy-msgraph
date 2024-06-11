@@ -16,30 +16,27 @@ import (
 func init() {
 	requiredEnvDefs := []cloudy.EnvDefinition{
 		{
+			Key:		  "MSGRAPH_AZ_TENANT_ID",
 			Name:         "MSGRAPH_AZ_TENANT_ID",
-			Description:  "",
-			DefaultValue: "",
-			Keys:         []string{"MSGRAPH_AZ_TENANT_ID"},
+			FallbackKeys: []string{"AZ_TENANT_ID"},
 		}, {
+			Key:		  "MSGRAPH_AZ_CLIENT_ID",
 			Name:         "MSGRAPH_AZ_CLIENT_ID",
-			Description:  "",
-			DefaultValue: "",
-			Keys:         []string{"MSGRAPH_AZ_CLIENT_ID"},
+			FallbackKeys: []string{"AZ_CLIENT_ID"},
+
 		}, {
+			Key:		  "MSGRAPH_AZ_CLIENT_SECRET",
 			Name:         "MSGRAPH_AZ_CLIENT_SECRET",
-			Description:  "",
-			DefaultValue: "",
-			Keys:         []string{"MSGRAPH_AZ_CLIENT_SECRET"},
+			FallbackKeys: []string{"AZ_CLIENT_SECRET"},
 		}, {
+			Key:		  "MSGRAPH_AZ_REGION",
 			Name:         "MSGAPH Azure Region",
-			Description:  "",
-			DefaultValue: "",
-			Keys:         []string{"MSGRAPH_AZ_REGION"},
+			FallbackKeys: []string{"AZ_REGION"},
 		}, {
+			Key:		  "MSGRAPH_AZ_API_BASE",
 			Name:         "MSGRAPH_AZ_API_BASE",
-			Description:  "",
+			FallbackKeys: []string{"AZ_API_BASE"},
 			DefaultValue: "https://graph.microsoft.us/v1.0",
-			Keys:         []string{"MSGRAPH_AZ_API_BASE"},
 		},
 	}
 
