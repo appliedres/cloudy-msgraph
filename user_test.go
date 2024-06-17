@@ -90,9 +90,10 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestGetUserToAzure(t *testing.T) {
-	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+	// _ = testutil.LoadEnv("../../arkloud-conf/arkloud.env")
+	_ = testutil.LoadEnv("/home/john/arkloud/arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "", "")
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()

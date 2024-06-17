@@ -28,13 +28,13 @@ type MsGraphInstance struct {
 var USGovernment = MsGraphInstance{
 	Name:  "USGovernment",
 	Login: "https://login.microsoftonline.us/",
-	Base:  "https://graph.microsoft.us/",
+	Base:  "https://graph.microsoft.us/v1.0",
 }
 
 var AzurePublic = MsGraphInstance{
 	Name:  "Public",
 	Login: "https://login.microsoftonline.com/",
-	Base:  "https://graph.microsoft.com/",
+	Base:  "https://graph.microsoft.com/v1.0",
 }
 
 type MsGraphConfig struct {

@@ -168,6 +168,10 @@ func (um *MsGraphUserManager) GetUserByEmail(ctx context.Context, email string, 
 	return rtn[0], nil
 }
 
+// $top = page size
+// $skip = results to skip
+// https://learn.microsoft.com/en-us/graph/query-parameters?tabs=http
+// https://learn.microsoft.com/en-us/graph/filter-query-parameter?tabs=http
 func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*cloudymodels.User, interface{}, error) {
 	headers := abstractions.NewRequestHeaders()
 	headers.Add("ConsistencyLevel", "eventual")
