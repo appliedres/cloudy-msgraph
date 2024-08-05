@@ -53,8 +53,8 @@ func (lm *MsGraphLicenseManagerFactory) FromEnv(env *cloudy.Environment) (interf
 
 func (lm *MsGraphLicenseManager) AssignLicense(ctx context.Context, userId string, licenseSkus ...string) error {
 	//body := users.NewItemMicrosoftGraphAssignLicenseAssignLicensePostRequestBody()
-	body := users.NewItemAssignLicensePostRequestBody()
-	// body := users.NewItemAssignlicenseAssignLicensePostRequestBody()
+	// body := users.NewItemAssignLicensePostRequestBody()
+	body := users.NewItemAssignlicenseAssignLicensePostRequestBody()
 
 	assignedLicenses := []models.AssignedLicenseable{}
 	for _, sku := range licenseSkus {
@@ -77,8 +77,8 @@ func (lm *MsGraphLicenseManager) AssignLicense(ctx context.Context, userId strin
 }
 
 func (lm *MsGraphLicenseManager) RemoveLicense(ctx context.Context, userId string, licenseSkus ...string) error {
-	body := users.NewItemAssignLicensePostRequestBody()
-	// body := users.NewItemAssignlicenseAssignLicensePostRequestBody()
+	// body := users.NewItemAssignLicensePostRequestBody()
+	body := users.NewItemAssignlicenseAssignLicensePostRequestBody()
 
 	body.SetAddLicenses([]models.AssignedLicenseable{})
 
