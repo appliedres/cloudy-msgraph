@@ -46,9 +46,9 @@ func TestListGroups(t *testing.T) {
 		log.Fatalf("Could not instantiate the group manager. %v", err)
 	}
 
-	groups, _ := gm.ListGroups(ctx)
+	groups, _ := gm.ListGroups(ctx, "", nil)
 
-	for _, group := range groups {
+	for _, group := range *groups {
 		_, _ = gm.GetGroupMembers(ctx, group.ID)
 	}
 }

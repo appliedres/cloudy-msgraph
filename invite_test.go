@@ -22,7 +22,7 @@ func TestInviteManager(t *testing.T) {
 	cfg.SetInstance(&USGovernment)
 
 	inviteUser := &cloudymodels.User{
-		UPN:         "some.testuser@collider.onmicrosoft.us",
+		Username:    "some.testuser@collider.onmicrosoft.us",
 		DisplayName: "some testuser",
 		Email:       "sometestuser@gmail.com",
 	}
