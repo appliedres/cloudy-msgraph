@@ -4,58 +4,25 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/appliedres/cloudy"
 	cloudymodels "github.com/appliedres/cloudy/models"
-	"github.com/go-openapi/strfmt"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
-
-var DefaultUserSelectFields = []string{
-	"accountEnabled",
-	"customSecurityAttributes",
-	// "signInActivity",
-	"businessPhones",
-	"displayName",
-	"givenName",
-	"id",
-	"jobTitle",
-	"mail",
-	"mobilePhone",
-	"officeLocation",
-	"surname",
-	"userPrincipalName",
-	"assignedLicenses",
-	"companyName",
-	"authorizationInfo",
-	"streetAddress",
-}
-
-var SigninActivityField = "signInActivity"
-
-type UserCustomSecurityAttributes struct {
-	AccountType            string `json:"AccountType,omitempty"`
-	Citizenship            string `json:"Citizenship,omitempty"`
-	ContractNumber         string `json:"ContractNumber,omitempty"`
-	ContractExpirationDate string `json:"ContractExpirationDate,omitempty"`
-	Justification          string `json:"Justification,omitempty"`
-	ProgramRole            string `json:"ProgramRole,omitempty"`
-	Sponsor                string `json:"Sponsor,omitempty"`
-	StatusReason           string `json:"StatusReason,omitempty"`
-}
 
 func UserToAzure(user *cloudymodels.User) *models.User {
 	u := models.NewUser()
 
-	if !strings.EqualFold(user.ID, "") {
-		u.SetId(&user.ID)
+	if !strings.EqualFold(user.UID, "") {
+		u.SetId(&user.UID)
 	}
 
-	u.SetUserPrincipalName(&user.UPN)
+	u.SetUserPrincipalName(&user.Username)
 	u.SetDisplayName(&user.DisplayName)
 
-	emailNickname := cloudy.TrimDomain(user.UPN)
+	emailNickname := cloudy.TrimDomain(user.Username)
 	u.SetMailNickname(&emailNickname)
 
 	if user.Email != "" {
@@ -65,30 +32,36 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 	u.SetGivenName(&user.FirstName)
 	u.SetSurname(&user.LastName)
 
-	if user.Company != "" {
-		u.SetCompanyName(&user.Company)
+	if user.Attributes["Company"] != "" {
+		company := user.Attributes["Company"]
+		u.SetCompanyName(&company)
 	}
 
-	if user.JobTitle != "" {
-		u.SetJobTitle(&user.JobTitle)
+	if user.Attributes["JobTitle"] != "" {
+		jobTitle := user.Attributes["JobTitle"]
+		u.SetJobTitle(&jobTitle)
 	}
 
-	if user.OfficePhone != "" {
-		u.SetBusinessPhones([]string{user.OfficePhone})
+	if user.Attributes["OfficePhone"] != "" {
+		u.SetBusinessPhones([]string{user.Attributes["OfficePhone"]})
 	}
 
-	if user.MobilePhone != "" {
-		u.SetMobilePhone(&user.MobilePhone)
+	if user.Attributes["MobilePhone"] != "" {
+		mobilePhone := user.Attributes["MobilePhone"]
+		u.SetMobilePhone(&mobilePhone)
 	}
 
-	if user.Department != "" {
-		u.SetDepartment(&user.Department)
+	if user.Attributes["Department"] != "" {
+		dept := user.Attributes["Department"]
+		u.SetDepartment(&dept)
 	}
 
-	if user.MustChangePassword || user.Password != "" {
+	if user.Attributes["MustChangePassword"] == "true" || user.Attributes["Password"] != "" {
 		profile := models.NewPasswordProfile()
-		profile.SetForceChangePasswordNextSignIn(cloudy.BoolP(user.MustChangePassword))
-		profile.SetPassword(&user.Password)
+		mustChangePw := true
+		profile.SetForceChangePasswordNextSignIn(&mustChangePw)
+		pw := user.Attributes["Password"]
+		profile.SetPassword(&pw)
 		u.SetPasswordProfile(profile)
 	}
 
@@ -107,38 +80,45 @@ func ParseUserCustomSecurityAttributes(user *cloudymodels.User) *models.CustomSe
 	// TODO: When Microsoft fixes the bug with Custom Security Attributes this will need to be changed
 	cloudyattr := make(map[string]interface{})
 
-	if user.AccountType != "" {
-		cloudyattr["AccountType"] = &user.AccountType
+	if user.Attributes["AccountType"] != "" {
+		acctType := user.Attributes["AccountType"]
+		cloudyattr["AccountType"] = &acctType
 		hasCustomSecurityAttributes = true
 	}
 
-	if user.Citizenship != "" {
-		cloudyattr["Citizenship"] = &user.Citizenship
+	if user.Attributes["Citizenship"] != "" {
+		citizenship := user.Attributes["Citizenship"]
+		cloudyattr["Citizenship"] = &citizenship
 		hasCustomSecurityAttributes = true
 	}
 
-	if user.ContractDate != "" {
-		cloudyattr["ContractExpirationDate"] = &user.ContractDate
+	if user.Attributes["ContractDate"] != "" {
+		contractDate := user.Attributes["ContractDate"]
+		cloudyattr["ContractExpirationDate"] = &contractDate
 		hasCustomSecurityAttributes = true
 	}
 
-	if user.ContractNumber != "" {
-		cloudyattr["ContractNumber"] = &user.ContractNumber
+	if user.Attributes["ContractNumber"] != "" {
+		contractNumber := user.Attributes["ContractNumber"]
+		cloudyattr["ContractNumber"] = &contractNumber
 		hasCustomSecurityAttributes = true
 	}
 
-	if user.Organization != "" {
-		cloudyattr["Organization"] = &user.Organization
+	if user.Attributes["Organization"] != "" {
+		organization := user.Attributes["Organization"]
+		cloudyattr["Organization"] = &organization
 		hasCustomSecurityAttributes = true
 	}
 
-	if user.Project != "" {
-		cloudyattr["Project"] = &user.Project
+	if user.Attributes["Project"] != "" {
+		project := user.Attributes["Project"]
+		cloudyattr["Project"] = &project
 		hasCustomSecurityAttributes = true
 	}
 
-	if user.ProgramRole != "" {
-		cloudyattr["ProgramRole"] = &user.ProgramRole
+	if user.Attributes["ProgramRole"] != "" {
+		programRole := user.Attributes["ProgramRole"]
+		cloudyattr["ProgramRole"] = &programRole
 		hasCustomSecurityAttributes = true
 	}
 
@@ -161,7 +141,7 @@ func ParseUserCustomSecurityAttributes(user *cloudymodels.User) *models.CustomSe
 func UserToPatch(user *cloudymodels.User, currentUser *cloudymodels.User) *models.User {
 
 	u := models.NewUser()
-	u.SetId(&user.ID)
+	u.SetId(&user.UID)
 
 	if user.FirstName != currentUser.FirstName {
 		u.SetGivenName(&user.FirstName)
@@ -171,16 +151,19 @@ func UserToPatch(user *cloudymodels.User, currentUser *cloudymodels.User) *model
 		u.SetSurname(&user.LastName)
 	}
 
-	if user.JobTitle != currentUser.JobTitle {
-		u.SetJobTitle(&user.JobTitle)
+	if user.Attributes["JobTitle"] != currentUser.Attributes["JobTitle"] {
+		jobTitle := user.Attributes["JobTitle"]
+		u.SetJobTitle(&jobTitle)
 	}
 
-	if user.MobilePhone != currentUser.MobilePhone {
-		u.SetMobilePhone(&user.MobilePhone)
+	if user.Attributes["MobilePhone"] != currentUser.Attributes["MobilePhone"] {
+		mobilePhone := user.Attributes["MobilePhone"]
+		u.SetMobilePhone(&mobilePhone)
 	}
 
-	if user.Department != currentUser.Department {
-		u.SetDepartment(&user.Department)
+	if user.Attributes["Department"] != currentUser.Attributes["Department"] {
+		department := user.Attributes["Department"]
+		u.SetDepartment(&department)
 	}
 
 	customSecurityAttributes := ParseUserCustomSecurityAttributes(user)
@@ -196,11 +179,11 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 	u := &cloudymodels.User{}
 
 	if user.GetId() != nil {
-		u.ID = *user.GetId()
+		u.UID = *user.GetId()
 	}
 
 	if user.GetUserPrincipalName() != nil {
-		u.UPN = *user.GetUserPrincipalName()
+		u.Username = *user.GetUserPrincipalName()
 	}
 
 	if user.GetGivenName() != nil {
@@ -215,50 +198,46 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		u.Email = *user.GetMail()
 	}
 
-	if user.GetCompanyName() != nil {
-		u.Company = *user.GetCompanyName()
-	}
-
-	if user.GetJobTitle() != nil {
-		u.JobTitle = *user.GetJobTitle()
-	}
-
 	if user.GetDisplayName() != nil {
 		u.DisplayName = *user.GetDisplayName()
-	}
-
-	if user.GetDepartment() != nil {
-		u.Department = *user.GetDepartment()
-	}
-
-	if user.GetDepartment() != nil {
-		u.Department = *user.GetDepartment()
-	}
-
-	if user.GetMobilePhone() != nil {
-		u.MobilePhone = *user.GetMobilePhone()
-	}
-
-	if len(user.GetBusinessPhones()) >= 1 {
-		u.OfficePhone = user.GetBusinessPhones()[0]
 	}
 
 	if user.GetAccountEnabled() != nil {
 		u.Enabled = *user.GetAccountEnabled()
 	}
 
+	u.Attributes = make(map[string]string)
+	if user.GetCompanyName() != nil {
+		u.Attributes["Company"] = *user.GetCompanyName()
+	}
+
+	if user.GetJobTitle() != nil {
+		u.Attributes["JobTitle"] = *user.GetJobTitle()
+	}
+
+	if user.GetDepartment() != nil {
+		u.Attributes["Department"] = *user.GetDepartment()
+	}
+
+	if user.GetMobilePhone() != nil {
+		u.Attributes["MobilePhone"] = *user.GetMobilePhone()
+	}
+
+	if len(user.GetBusinessPhones()) >= 1 {
+		u.Attributes["OfficePhone"] = user.GetBusinessPhones()[0]
+	}
+
 	if user.GetSignInActivity() != nil && user.GetSignInActivity().GetLastSignInDateTime() != nil {
-		lastSignIn := *user.GetSignInActivity().GetLastSignInDateTime()
-		u.LastSignInDate = strfmt.DateTime(lastSignIn)
+		u.Attributes["LastSignInDate"] = user.GetSignInActivity().GetLastSignInDateTime().String()
 	}
 
 	if user.GetPasswordProfile() != nil {
 		if user.GetPasswordProfile().GetForceChangePasswordNextSignIn() != nil {
-			u.MustChangePassword = *user.GetPasswordProfile().GetForceChangePasswordNextSignIn()
+			u.Attributes["MustChangePassword"] = strconv.FormatBool(*user.GetPasswordProfile().GetForceChangePasswordNextSignIn())
 		}
 
 		if user.GetPasswordProfile().GetPassword() != nil {
-			u.Password = *user.GetPasswordProfile().GetPassword()
+			u.Attributes["Password"] = *user.GetPasswordProfile().GetPassword()
 		}
 	}
 
@@ -268,37 +247,37 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		// Read the Contract Number
 		contractNumber, exists := allAttributes["ContractNumber"]
 		if exists && contractNumber != nil {
-			u.ContractNumber = *contractNumber
+			u.Attributes["ContractNumber"] = *contractNumber
 		}
 
 		// Read the Contract Date
 		contractDate, exists := allAttributes["ContractExpirationDate"]
 		if exists && contractDate != nil {
-			u.ContractDate = *contractDate
+			u.Attributes["ContractDate"] = *contractDate
 		}
 
 		// Read the Account Type
 		accountType, exists := allAttributes["AccountType"]
 		if exists && accountType != nil {
-			u.AccountType = *accountType
+			u.Attributes["AccountType"] = *accountType
 		}
 
 		// Read the Citizenship
 		citizenship, exists := allAttributes["Citizenship"]
 		if exists && citizenship != nil {
-			u.Citizenship = *citizenship
+			u.Attributes["Citizenship"] = *citizenship
 		}
 
 		// Read the Citizenship
 		organization, exists := allAttributes["Organization"]
 		if exists && organization != nil {
-			u.Organization = *organization
+			u.Attributes["Organization"] = *organization
 		}
 
 		// Read the Citizenship
 		programRole, exists := allAttributes["ProgramRole"]
 		if exists && programRole != nil {
-			u.ProgramRole = *programRole
+			u.Attributes["ProgramRole"] = *programRole
 		}
 
 	} else if user.GetStreetAddress() != nil {
@@ -309,10 +288,10 @@ func UserToCloudy(user models.Userable) *cloudymodels.User {
 		csa := UserCustomSecurityAttributes{}
 		json.Unmarshal(sDec, &csa)
 
-		u.AccountType = csa.AccountType
-		u.Citizenship = csa.Citizenship
-		u.ContractNumber = csa.ContractNumber
-		u.ContractDate = csa.ContractExpirationDate
+		u.Attributes["AccountType"] = csa.AccountType
+		u.Attributes["Citizenship"] = csa.Citizenship
+		u.Attributes["ContractNumber"] = csa.ContractNumber
+		u.Attributes["ContractDate"] = csa.ContractExpirationDate
 	}
 
 	return u
@@ -360,8 +339,8 @@ func readCustomAttributeStr(user models.Userable, attributeSet string, attribute
 
 func UpdateAzUser(ctx context.Context, azUser models.Userable, cUser *cloudymodels.User) {
 
-	if azUser.GetId() == nil || !strings.EqualFold(*azUser.GetId(), cUser.ID) {
-		azUser.SetId(&cUser.ID)
+	if azUser.GetId() == nil || !strings.EqualFold(*azUser.GetId(), cUser.UID) {
+		azUser.SetId(&cUser.UID)
 	}
 
 	if azUser.GetSurname() == nil || !strings.EqualFold(*azUser.GetSurname(), cUser.FirstName) {

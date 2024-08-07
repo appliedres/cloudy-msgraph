@@ -44,7 +44,7 @@ type MsGraphGroupManager struct {
 }
 
 // List all the groups available
-func (gm *MsGraphGroupManager) ListGroups(ctx context.Context) ([]*models.Group, error) {
+func (gm *MsGraphGroupManager) ListGroups(ctx context.Context, filter string, attrs []string) (*[]models.Group, error) {
 	cloudy.Info(ctx, "MsGraphGroupManager Listing Groups")
 	allGroups, err := gm.Client.Groups().Get(ctx, nil)
 	if err != nil {
@@ -54,14 +54,14 @@ func (gm *MsGraphGroupManager) ListGroups(ctx context.Context) ([]*models.Group,
 
 	cloudy.Info(ctx, "MsGraphGroupManager Creating Group array")
 	groups := allGroups.GetValue()
-	rtn := []*models.Group{}
+	rtn := []models.Group{}
 	for _, g := range groups {
-		rtn = append(rtn, GroupToCloudy(g))
+		rtn = append(rtn, *GroupToCloudy(g))
 	}
 
 	cloudy.Info(ctx, "MsGraphGroupManager Creating Group array complete")
 
-	return rtn, nil
+	return &rtn, nil
 }
 
 // Get all the groups for a single user
