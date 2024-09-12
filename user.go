@@ -88,6 +88,37 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 	return created, nil
 }
 
+func (um *MsGraphUserManager) SetUserPassword(ctx context.Context, uid string, pwd string) error {
+	if strings.EqualFold(uid, "") {
+		return cloudy.Error(ctx, "Not user id set. Cannot update user: %v", uid)
+	}
+
+	currentUser, err := um.GetUser(ctx, uid)
+	if err != nil {
+		_, message := GetErrorCodeAndMessage(ctx, err)
+		return cloudy.Error(ctx, "SetUserPassword Get Error %s", message)
+	}
+
+	azuser := models.NewUser()
+	azuser.SetId(&uid)
+
+	profile := models.NewPasswordProfile()
+	mustChangePw := false
+	profile.SetForceChangePasswordNextSignIn(&mustChangePw)
+	profile.SetPassword(&pwd)
+	azuser.SetPasswordProfile(profile)
+
+	cloudy.Info(ctx, "Updating user password with ID: %s (%s)", currentUser.UID, currentUser.Username)
+	_, err = um.Client.Users().ByUserId(uid).Patch(ctx, azuser, nil)
+
+	if err != nil {
+		_, message := GetErrorCodeAndMessage(ctx, err)
+		return cloudy.Error(ctx, "SetUserPassword  Error %s", message)
+	}
+
+	return err
+}
+
 func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
 	cloudy.Info(ctx, "[%s] GetUser", uid)
 	headers := abstractions.NewRequestHeaders()
