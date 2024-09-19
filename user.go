@@ -88,7 +88,7 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 	return created, nil
 }
 
-func (um *MsGraphUserManager) SetUserPassword(ctx context.Context, uid string, pwd string) error {
+func (um *MsGraphUserManager) SetUserPassword(ctx context.Context, uid string, pwd string, mustChange bool) error {
 	if strings.EqualFold(uid, "") {
 		return cloudy.Error(ctx, "Not user id set. Cannot update user: %v", uid)
 	}
@@ -103,8 +103,7 @@ func (um *MsGraphUserManager) SetUserPassword(ctx context.Context, uid string, p
 	azuser.SetId(&uid)
 
 	profile := models.NewPasswordProfile()
-	mustChangePw := false
-	profile.SetForceChangePasswordNextSignIn(&mustChangePw)
+	profile.SetForceChangePasswordNextSignIn(&mustChange)
 	profile.SetPassword(&pwd)
 	azuser.SetPasswordProfile(profile)
 
