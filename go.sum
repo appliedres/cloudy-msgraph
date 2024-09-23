@@ -29,8 +29,8 @@ github.com/Jeffail/gabs/v2 v2.7.0 h1:Y2edYaTcE8ZpRsR2AtmPu5xQdFDIthFG0jYhu5PY8kg
 github.com/Jeffail/gabs/v2 v2.7.0/go.mod h1:dp5ocw1FvBBQYssgHsG7I1WYsiLRtkUaB1FEtSwvNUw=
 github.com/a8m/documentdb v1.3.0 h1:xzZQ6Ts02QesHeQdRr6doF7xfXYSsq9SUIlCqfJjbv4=
 github.com/a8m/documentdb v1.3.0/go.mod h1:4Z0mpi7fkyqjxUdGiNMO3vagyiUoiwLncaIX6AsW5z0=
-github.com/appliedres/cloudy v0.0.34 h1:YARV/J4mNCd8j+rVCf+V1TnEnuwCGiYcEy/3Q3WTxIY=
-github.com/appliedres/cloudy v0.0.34/go.mod h1:FB4U1ffrAEo43oWZFyotmixhm+uvnAWj2/85h2iFBaw=
+github.com/appliedres/cloudy v0.0.41 h1:uN0Axhk/CEdqyUyVzq/h61it/bH0vTP+Abb93Z9J3QY=
+github.com/appliedres/cloudy v0.0.41/go.mod h1:FB4U1ffrAEo43oWZFyotmixhm+uvnAWj2/85h2iFBaw=
 github.com/appliedres/cloudy-azure v0.0.15 h1:Do6DWqhfBGGnKlrJYcmR0eRnwJpw7UPpjz26e7rKzHg=
 github.com/appliedres/cloudy-azure v0.0.15/go.mod h1:bCXMvNSAcf4LQbRiCEvVZV7snYnymR6iZxnYrqU7BjA=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
