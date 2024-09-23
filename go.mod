@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.13.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
-	github.com/appliedres/cloudy v0.0.34
+	github.com/appliedres/cloudy v0.0.41
 	github.com/google/uuid v1.6.0
 	github.com/microsoft/kiota-abstractions-go v1.6.1
 	github.com/microsoft/kiota-authentication-azure-go v1.0.2
