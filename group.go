@@ -196,6 +196,7 @@ func (gm *MsGraphGroupManager) GetGroupMembers(ctx context.Context, grpId string
 	for _, dirObj := range dirObjects {
 		switch data := dirObj.(type) {
 		case graphmodels.Userable:
+			cloudy.Info(ctx, "MsGraphGroupManager Member id: %s", *data.GetId())
 			rtn = append(rtn, UserToCloudy(data))
 			// default:
 			// 	cloudy.Info(ctx, "Non-User directory object: %T", dirObj)
