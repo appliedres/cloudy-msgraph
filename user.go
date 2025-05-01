@@ -68,7 +68,7 @@ func fromEnvironment(env *cloudy.Environment) *MsGraphConfig {
 
 func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels.User) (*cloudymodels.User, error) {
 
-	cloudy.Info(ctx, "[%s] MsGraphUserManager NewUser", newUser.UPN)
+	cloudy.Info(ctx, "[%s] MsGraphUserManager NewUser", newUser.Username)
 
 	body := UserToAzure(newUser)
 	body.SetAccountEnabled(cloudy.BoolP(true))
@@ -78,14 +78,44 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 		code, message := GetErrorCodeAndMessage(ctx, err)
 
 		if strings.EqualFold(code, BadRequest) {
-			return nil, cloudy.Error(ctx, "[%s] NewUser - BadRequest - %s", newUser.UPN, message)
+			return nil, cloudy.Error(ctx, "[%s] NewUser - BadRequest - %s", newUser.Username, message)
 		} else {
-			return nil, cloudy.Error(ctx, "[%s] NewUser - %s - Error: %v", newUser.UPN, message, err)
+			return nil, cloudy.Error(ctx, "[%s] NewUser - %s - Error: %v", newUser.Username, message, err)
 		}
 	}
 
 	created := UserToCloudy(user)
 	return created, nil
+}
+
+func (um *MsGraphUserManager) SetUserPassword(ctx context.Context, uid string, pwd string, mustChange bool) error {
+	if strings.EqualFold(uid, "") {
+		return cloudy.Error(ctx, "Not user id set. Cannot update user: %v", uid)
+	}
+
+	currentUser, err := um.GetUser(ctx, uid)
+	if err != nil {
+		_, message := GetErrorCodeAndMessage(ctx, err)
+		return cloudy.Error(ctx, "SetUserPassword Get Error %s", message)
+	}
+
+	azuser := models.NewUser()
+	azuser.SetId(&uid)
+
+	profile := models.NewPasswordProfile()
+	profile.SetForceChangePasswordNextSignIn(&mustChange)
+	profile.SetPassword(&pwd)
+	azuser.SetPasswordProfile(profile)
+
+	cloudy.Info(ctx, "Updating user password with ID: %s (%s)", currentUser.UID, currentUser.Username)
+	_, err = um.Client.Users().ByUserId(uid).Patch(ctx, azuser, nil)
+
+	if err != nil {
+		_, message := GetErrorCodeAndMessage(ctx, err)
+		return cloudy.Error(ctx, "SetUserPassword  Error %s", message)
+	}
+
+	return err
 }
 
 func (um *MsGraphUserManager) GetUser(ctx context.Context, uid string) (*cloudymodels.User, error) {
@@ -168,7 +198,23 @@ func (um *MsGraphUserManager) GetUserByEmail(ctx context.Context, email string, 
 	return rtn[0], nil
 }
 
-func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, filter interface{}) ([]*cloudymodels.User, interface{}, error) {
+func (um *MsGraphUserManager) GetUserWithAttributes(ctx context.Context, uid string, attrs []string) (*cloudymodels.User, error) {
+	return um.GetUser(ctx, uid)
+}
+
+func (um *MsGraphUserManager) ListUsers(ctx context.Context, filter string, attrs []string) (*[]cloudymodels.User, error) {
+	users, _, err := um.listUsers(ctx, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// $top = page size
+// $skip = results to skip
+// https://learn.microsoft.com/en-us/graph/query-parameters?tabs=http
+// https://learn.microsoft.com/en-us/graph/filter-query-parameter?tabs=http
+func (um *MsGraphUserManager) listUsers(ctx context.Context, page interface{}, filter interface{}) (*[]cloudymodels.User, interface{}, error) {
 	headers := abstractions.NewRequestHeaders()
 	headers.Add("ConsistencyLevel", "eventual")
 	// requestCount := true
@@ -184,29 +230,29 @@ func (um *MsGraphUserManager) ListUsers(ctx context.Context, page interface{}, f
 		return nil, nil, err
 	}
 
-	var rtn []*cloudymodels.User
+	var rtn []cloudymodels.User
 	pageIterator, err := msgraphcore.NewPageIterator[models.Userable](result, um.Adapter, models.CreateUserCollectionResponseFromDiscriminatorValue)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	err = pageIterator.Iterate(ctx, func(pageItem models.Userable) bool {
-		rtn = append(rtn, UserToCloudy(pageItem))
+		rtn = append(rtn, *UserToCloudy(pageItem))
 		return true
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return rtn, nil, nil
+	return &rtn, nil, nil
 }
 
 func (um *MsGraphUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.User) error {
-	if strings.EqualFold(usr.ID, "") {
+	if strings.EqualFold(usr.UID, "") {
 		return cloudy.Error(ctx, "Not user id set. Cannot update user: %v", usr)
 	}
 
-	currentUser, err := um.GetUser(ctx, usr.ID)
+	currentUser, err := um.GetUser(ctx, usr.UID)
 	if err != nil {
 		_, message := GetErrorCodeAndMessage(ctx, err)
 
@@ -215,9 +261,9 @@ func (um *MsGraphUserManager) UpdateUser(ctx context.Context, usr *cloudymodels.
 
 	azUser := UserToPatch(usr, currentUser)
 
-	cloudy.Info(ctx, "Updating user with ID: %s (%s)", currentUser.ID, currentUser.UPN)
+	cloudy.Info(ctx, "Updating user with ID: %s (%s)", currentUser.UID, currentUser.Username)
 
-	_, err = um.Client.Users().ByUserId(usr.ID).Patch(ctx, azUser, nil)
+	_, err = um.Client.Users().ByUserId(usr.UID).Patch(ctx, azUser, nil)
 
 	if err != nil {
 		_, message := GetErrorCodeAndMessage(ctx, err)

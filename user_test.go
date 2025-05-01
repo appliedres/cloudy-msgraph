@@ -90,9 +90,10 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestGetUserToAzure(t *testing.T) {
-	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
+	// _ = testutil.LoadEnv("../../arkloud-conf/arkloud.env")
+	_ = testutil.LoadEnv("/home/john/arkloud/arkloud-conf/arkloud.env")
 
-	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "USERAPI_PREFIX", "USER_API")
+	env := cloudy.CreateCompleteEnvironment("ARKLOUD_ENV", "", "")
 	cloudy.SetDefaultEnvironment(env)
 
 	ctx := cloudy.StartContext()
@@ -143,10 +144,10 @@ func TestUpdateUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	data := time.Now().Format(time.RFC1123Z)
-	u.ContractNumber = data
-	u.ContractDate = "Whenever"
-	u.Citizenship = "USA"
-	u.AccountType = "DOD Contractor"
+	u.Attributes["ContractNumber"] = data
+	u.Attributes["ContractDate"] = "Whenever"
+	u.Attributes["Citizenship"] = "USA"
+	u.Attributes["AccountType"] = "DOD Contractor"
 	err = um.UpdateUser(ctx, u)
 	assert.Nil(t, err)
 
@@ -156,7 +157,7 @@ func TestUpdateUser(t *testing.T) {
 	u2, err := um.GetUser(ctx, "unittest@collider.onmicrosoft.us")
 	assert.Nil(t, err)
 
-	assert.Equal(t, data, u2.ContractNumber)
+	assert.Equal(t, data, u2.Attributes["ContractNumber"])
 }
 
 func testUM() (context.Context, *MsGraphUserManager) {
@@ -179,37 +180,46 @@ func testUM() (context.Context, *MsGraphUserManager) {
 
 func TestUserModel(t *testing.T) {
 	cloudyU1 := &cloudymodels.User{
-		UPN:                "a",
-		DisplayName:        "b",
-		FirstName:          "d",
-		LastName:           "e",
-		Company:            "f",
-		Department:         "g",
-		Email:              "h",
-		ID:                 "i",
-		JobTitle:           "j",
-		MobilePhone:        "k",
-		MustChangePassword: true,
-		OfficePhone:        "l",
-		Password:           "m",
+		Username:    "a",
+		DisplayName: "b",
+		FirstName:   "d",
+		LastName:    "e",
+		Email:       "h",
+		UID:         "i",
 	}
 
+	cloudyU1.Attributes = make(map[string]string)
+	cloudyU1.Attributes["Company"] = "f"
+	cloudyU1.Attributes["Department"] = "g"
+	cloudyU1.Attributes["JobTitle"] = "j"
+	cloudyU1.Attributes["MobilePhone"] = "k"
+	cloudyU1.Attributes["MustChangePassword"] = "true"
+	cloudyU1.Attributes["OfficePhone"] = "l"
+	cloudyU1.Attributes["Password"] = "m"
+
 	azureU2 := models.NewUser()
-	azureU2.SetId(&cloudyU1.ID)
-	azureU2.SetUserPrincipalName(&cloudyU1.UPN)
+	azureU2.SetId(&cloudyU1.UID)
+	azureU2.SetUserPrincipalName(&cloudyU1.Username)
 	azureU2.SetDisplayName(&cloudyU1.DisplayName)
-	azureU2.SetMailNickname(&cloudyU1.UPN)
+	azureU2.SetMailNickname(&cloudyU1.Username)
 	azureU2.SetMail(&cloudyU1.Email)
 	azureU2.SetGivenName(&cloudyU1.FirstName)
 	azureU2.SetSurname(&cloudyU1.LastName)
-	azureU2.SetCompanyName(&cloudyU1.Company)
-	azureU2.SetJobTitle(&cloudyU1.JobTitle)
-	azureU2.SetBusinessPhones([]string{cloudyU1.OfficePhone})
-	azureU2.SetMobilePhone(&cloudyU1.MobilePhone)
-	azureU2.SetDepartment(&cloudyU1.Department)
+
+	company := cloudyU1.Attributes["Company"]
+	azureU2.SetCompanyName(&company)
+	jobTitle := cloudyU1.Attributes["JobTitle"]
+	azureU2.SetJobTitle(&jobTitle)
+	azureU2.SetBusinessPhones([]string{cloudyU1.Attributes["OfficePhone"]})
+	mobilePhone := cloudyU1.Attributes["MobilePhone"]
+	azureU2.SetMobilePhone(&mobilePhone)
+	department := cloudyU1.Attributes["Department"]
+	azureU2.SetDepartment(&department)
 	passwordProfile := models.NewPasswordProfile()
-	passwordProfile.SetForceChangePasswordNextSignIn(cloudy.BoolP(cloudyU1.MustChangePassword))
-	passwordProfile.SetPassword(&cloudyU1.Password)
+	mustChangePw := true
+	passwordProfile.SetForceChangePasswordNextSignIn(&mustChangePw)
+	pw := cloudyU1.Attributes["Password"]
+	passwordProfile.SetPassword(&pw)
 	azureU2.SetPasswordProfile(passwordProfile)
 
 	azureU1 := UserToAzure(cloudyU1)
