@@ -3,6 +3,7 @@ package cloudymsgraph
 import (
 	"context"
 	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,67 @@ func TestEmailNickname1(t *testing.T) {
 	check1 := GenerateMailNickname("   2John Doe #254#@@?")
 	require.Equal(t, "2johndoe254", check1)
 }
+
+func TestUserToAzure(t *testing.T) {
+	u := &cloudymodels.User{
+		Username:  "2test@abc.onmicrosoft.com",
+		Email:     "2test@abc.com",
+		FirstName: "2Test",
+		LastName:  "TEster",
+	}
+
+	azureUser := UserToAzure(u, "abc.onmicrosoft.com")
+	require.NotEmpty(t, azureUser.GetMailNickname())
+}
+
+func newTestUM(t *testing.T) *MsGraphUserManager {
+	ctx := cloudy.StartContext()
+	err := cloudy.LoadEnv(".env.local")
+	require.Nil(t, err)
+
+	clientId := os.Getenv("AZ_CLIENT_ID")
+	clientSecret := os.Getenv("AZ_CLIENT_SECRET")
+	tenantId := os.Getenv("AZ_TENANT_ID")
+	domain := os.Getenv("DEFAULT_DOMAIN")
+
+	require.NotEmpty(t, clientId)
+	require.NotEmpty(t, clientSecret)
+	require.NotEmpty(t, tenantId)
+	require.NotEmpty(t, domain)
+
+	cfg := &MsGraphConfig{
+		TenantID:      tenantId,
+		ClientID:      clientId,
+		ClientSecret:  clientSecret,
+		DefaultDomain: domain,
+	}
+	cfg.SetInstance(&USGovernment)
+
+	um, err := NewMsGraphUserManager(ctx, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, um)
+	return um
+}
+
+func TestNewUser2(t *testing.T) {
+	ctx := cloudy.StartContext()
+	um := newTestUM(t)
+
+	u := &cloudymodels.User{
+		FirstName: "Firsty",
+		LastName:  "Lasty",
+		Email:     "flasty@appliedres.com",
+	}
+
+	created, err := um.NewUser(ctx, u)
+	require.Nil(t, err)
+	require.NotNil(t, created)
+	require.NotEmpty(t, created.UID)
+
+	err = um.DeleteUser(ctx, created.UID)
+	require.Nil(t, err)
+}
+
 func TestGetUser(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
@@ -115,7 +177,7 @@ func TestGetUserToAzure(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, u)
 
-	azUser := UserToAzure(u)
+	azUser := UserToAzure(u, "collider.onmicrosoft.us")
 	assert.NotNil(t, azUser)
 
 }
@@ -227,7 +289,7 @@ func TestUserModel(t *testing.T) {
 	passwordProfile.SetPassword(&pw)
 	azureU2.SetPasswordProfile(passwordProfile)
 
-	azureU1 := UserToAzure(cloudyU1)
+	azureU1 := UserToAzure(cloudyU1, "collider.onmicrosoft.us")
 	assert.Equal(t, azureU1.GetId(), azureU2.GetId())
 	assert.Equal(t, azureU1.GetUserPrincipalName(), azureU2.GetUserPrincipalName())
 	assert.Equal(t, azureU1.GetDisplayName(), azureU2.GetDisplayName())

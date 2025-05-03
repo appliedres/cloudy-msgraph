@@ -41,14 +41,34 @@ func GenerateMailNickname(dirtyEmail string) string {
 	return cleanEmail
 
 }
-func UserToAzure(user *cloudymodels.User) *models.User {
+func UserToAzure(user *cloudymodels.User, defaultDomain string) *models.User {
+
 	u := models.NewUser()
 
 	if !strings.EqualFold(user.UID, "") {
 		u.SetId(&user.UID)
 	}
 
-	u.SetUserPrincipalName(&user.Username)
+	// Build the username if missing. FIXME: allow us to have strategy for
+	// alternate username generation
+	if user.Username == "" {
+		user.Username = fmt.Sprintf("%v.%v", user.FirstName, user.LastName)
+	}
+	user.Username = SantizeUsername(user.Username)
+
+	var upn string
+	if strings.Contains(user.Username, "@") {
+		// We already have th
+		upn = user.Username
+	} else if defaultDomain != "" {
+		upn = fmt.Sprintf("%v@%v", user.Username, defaultDomain)
+	} else {
+		// UPNs with no domain really should not be allowed, but IDK
+		upn = user.Username
+	}
+	upn = SanitizeUPN(upn)
+
+	u.SetUserPrincipalName(&upn)
 	if user.DisplayName == "" {
 		user.DisplayName = fmt.Sprintf("%v %v", user.FirstName, user.LastName)
 	}
@@ -390,4 +410,17 @@ func UpdateAzUser(ctx context.Context, azUser models.Userable, cUser *cloudymode
 		azUser.SetGivenName(&cUser.LastName)
 	}
 
+}
+
+func SantizeUsername(username string) string {
+	cleaned := strings.ToLower(username)
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = strings.ReplaceAll(cleaned, " ", ".")
+
+	return cleaned
+}
+
+func SanitizeUPN(upn string) string {
+
+	return upn
 }

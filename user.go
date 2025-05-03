@@ -70,10 +70,17 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 
 	cloudy.Info(ctx, "[%s] MsGraphUserManager NewUser", newUser.Username)
 
-	body := UserToAzure(newUser)
+	body := UserToAzure(newUser, um.Cfg.DefaultDomain)
 
 	body.SetAccountEnabled(cloudy.BoolP(true))
 	fmt.Println("NewUser Email Nickname:", *body.GetMailNickname())
+
+	pwd := cloudy.GeneratePassword(12, 2, 2, 2)
+	profile := models.NewPasswordProfile()
+	profile.SetForceChangePasswordNextSignIn(cloudy.BoolP(true))
+	profile.SetPassword(&pwd)
+	body.SetPasswordProfile(profile)
+
 	user, err := um.Client.Users().Post(ctx, body, nil)
 	if err != nil {
 		code, message := GetErrorCodeAndMessage(ctx, err)

@@ -38,12 +38,13 @@ var AzurePublic = MsGraphInstance{
 }
 
 type MsGraphConfig struct {
-	TenantID     string
-	ClientID     string
-	ClientSecret string
-	Region       string
-	APIBase      string
-	SelectFields []string
+	TenantID      string
+	ClientID      string
+	ClientSecret  string
+	Region        string
+	APIBase       string
+	SelectFields  []string
+	DefaultDomain string
 }
 
 func (azConfig *MsGraphConfig) SetInstanceName(name string) error {
