@@ -71,8 +71,9 @@ func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels
 	cloudy.Info(ctx, "[%s] MsGraphUserManager NewUser", newUser.Username)
 
 	body := UserToAzure(newUser)
-	body.SetAccountEnabled(cloudy.BoolP(true))
 
+	body.SetAccountEnabled(cloudy.BoolP(true))
+	fmt.Println("NewUser Email Nickname:", *body.GetMailNickname())
 	user, err := um.Client.Users().Post(ctx, body, nil)
 	if err != nil {
 		code, message := GetErrorCodeAndMessage(ctx, err)

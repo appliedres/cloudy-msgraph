@@ -4,6 +4,8 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/json"
+	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -12,6 +14,33 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
+/*
+Via Copilot
+Function to ensure that email nicknames meet the following criteria:
+1. Cannot contain spaces
+2. Lowercase
+3. Not longer than 64 chars
+4. Avoid special characters
+5. TODO: Check for uniqueness of this final email nickname
+*/
+func GenerateMailNickname(dirtyEmail string) string {
+	//Lowercase it
+	cleanEmail := strings.ToLower(dirtyEmail)
+
+	//Remove special characters and spaces
+	cleanupRegex := regexp.MustCompile(`[^a-z0-9-_]`)
+	cleanEmail = cleanupRegex.ReplaceAllString(cleanEmail, "")
+
+	// Trim to 64 chars
+	if len(cleanEmail) > 64 {
+		cleanEmail = cleanEmail[:64]
+	}
+
+	// Send it
+	fmt.Println("Cleaned email:", cleanEmail)
+	return cleanEmail
+
+}
 func UserToAzure(user *cloudymodels.User) *models.User {
 	u := models.NewUser()
 
@@ -20,9 +49,15 @@ func UserToAzure(user *cloudymodels.User) *models.User {
 	}
 
 	u.SetUserPrincipalName(&user.Username)
+	if user.DisplayName == "" {
+		user.DisplayName = fmt.Sprintf("%v %v", user.FirstName, user.LastName)
+	}
 	u.SetDisplayName(&user.DisplayName)
 
-	emailNickname := cloudy.TrimDomain(user.Username)
+	if user.Username == "" {
+		user.Username = fmt.Sprintf("%v.%v", user.FirstName, user.LastName)
+	}
+	emailNickname := GenerateMailNickname(cloudy.TrimDomain(user.Username))
 	u.SetMailNickname(&emailNickname)
 
 	if user.Email != "" {

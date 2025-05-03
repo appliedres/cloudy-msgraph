@@ -10,6 +10,7 @@ import (
 	cloudymodels "github.com/appliedres/cloudy/models"
 	"github.com/appliedres/cloudy/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	_ "github.com/appliedres/cloudy-azure"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
@@ -30,6 +31,10 @@ func TestUserManager(t *testing.T) {
 
 }
 
+func TestEmailNickname1(t *testing.T) {
+	check1 := GenerateMailNickname("   2John Doe #254#@@?")
+	require.Equal(t, "2johndoe254", check1)
+}
 func TestGetUser(t *testing.T) {
 	_ = testutil.LoadEnv("../arkloud-conf/arkloud.env")
 
