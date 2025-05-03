@@ -152,7 +152,17 @@ func (gm *MsGraphGroupManager) GetGroupId(ctx context.Context, name string) (str
 func (gm *MsGraphGroupManager) NewGroup(ctx context.Context, grp *models.Group) (*models.Group, error) {
 	g := GroupToAzure(grp)
 
+	cloudy.Info(ctx, "NewGroup group id %v name %v", grp.ID, grp.Name)
 	result, err := gm.Client.Groups().Post(ctx, g, nil)
+	if err != nil {
+		code, message := GetErrorCodeAndMessage(ctx, err)
+		cloudy.Info(ctx, "NewGroup group post error code %v message %v", code, message)
+		return nil, cloudy.Error(ctx, "NewGroup post Error: %v", message)
+	}
+	if result == nil {
+		cloudy.Info(ctx, "NewGroup post result is nil")
+		return nil, nil
+	}
 	newGrp := GroupToCloudy(result)
 	cloudy.Info(ctx, "New group created, %+v", result)
 
@@ -283,7 +293,6 @@ func GroupToCloudy(g graphmodels.Groupable) *models.Group {
 }
 
 func GroupToAzure(cg *models.Group) *graphmodels.Group {
-
 	group := graphmodels.NewGroup()
 	group.SetId(&cg.ID)
 	group.SetDisplayName(&cg.Name)
