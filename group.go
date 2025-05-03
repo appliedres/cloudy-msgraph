@@ -297,7 +297,8 @@ func GroupToAzure(cg *models.Group) *graphmodels.Group {
 	group.SetId(&cg.ID)
 	group.SetDisplayName(&cg.Name)
 	group.SetMailEnabled(cloudy.BoolP(false))
-	group.SetMailNickname(&cg.Name)
+	tmp := strings.ReplaceAll(cg.Name, " ", "-")
+	group.SetMailNickname(&tmp)
 	group.SetSecurityEnabled(cloudy.BoolP(true))
 
 	return group
