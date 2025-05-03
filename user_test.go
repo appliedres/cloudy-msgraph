@@ -93,7 +93,14 @@ func TestNewUser2(t *testing.T) {
 	require.NotNil(t, created)
 	require.NotEmpty(t, created.UID)
 
-	err = um.DeleteUser(ctx, created.UID)
+	t.Cleanup(func() {
+		err = um.DeleteUser(ctx, created.UID)
+		require.Nil(t, err)
+	})
+
+	// Set password
+	pwd := cloudy.GeneratePassword(16, 2, 2, 2)
+	err = um.SetUserPassword(ctx, created.UID, pwd, true)
 	require.Nil(t, err)
 }
 

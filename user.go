@@ -66,13 +66,41 @@ func fromEnvironment(env *cloudy.Environment) *MsGraphConfig {
 	return cfg
 }
 
+func (um *MsGraphUserManager) NewUserWithPassword(ctx context.Context, newUser *cloudymodels.User, pwd string) (*cloudymodels.User, error) {
+	cloudy.Info(ctx, "[%s] MsGraphUserManager NewUser", newUser.Username)
+
+	body := UserToAzure(newUser, um.Cfg.DefaultDomain)
+
+	body.SetAccountEnabled(cloudy.BoolP(true))
+	fmt.Println("NewUser Email Nickname:", *body.GetMailNickname())
+
+	profile := models.NewPasswordProfile()
+	profile.SetForceChangePasswordNextSignIn(cloudy.BoolP(true))
+	profile.SetPassword(&pwd)
+	body.SetPasswordProfile(profile)
+
+	user, err := um.Client.Users().Post(ctx, body, nil)
+	if err != nil {
+		code, message := GetErrorCodeAndMessage(ctx, err)
+
+		if strings.EqualFold(code, BadRequest) {
+			return nil, cloudy.Error(ctx, "[%s] NewUser - BadRequest - %s", newUser.Username, message)
+		} else {
+			return nil, cloudy.Error(ctx, "[%s] NewUser - %s - Error: %v", newUser.Username, message, err)
+		}
+	}
+
+	created := UserToCloudy(user)
+	return created, nil
+}
+
 func (um *MsGraphUserManager) NewUser(ctx context.Context, newUser *cloudymodels.User) (*cloudymodels.User, error) {
 
 	cloudy.Info(ctx, "[%s] MsGraphUserManager NewUser", newUser.Username)
 
 	body := UserToAzure(newUser, um.Cfg.DefaultDomain)
 
-	body.SetAccountEnabled(cloudy.BoolP(true))
+	body.SetAccountEnabled(cloudy.BoolP(false))
 	fmt.Println("NewUser Email Nickname:", *body.GetMailNickname())
 
 	pwd := cloudy.GeneratePassword(12, 2, 2, 2)
