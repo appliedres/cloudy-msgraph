@@ -1,6 +1,6 @@
 package cloudymsgraph
 
-import "github.com/appliedres/cloudy"
+import "gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
 
 func init() {
 	cloudy.CredentialSources[MSGraphCredentialsKey] = &MSGraphCredentialLoader{}

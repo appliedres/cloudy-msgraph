@@ -21,7 +21,7 @@ update() {
     dir="../$1"
     pushd $dir &> /dev/null
     git pull
-    go get "github.com/appliedres/$project@$nextVersion"
+    go get "gitlab.arkloud.dev/arkloud/arkloud-portal/$project@$nextVersion"
     go mod tidy
 
     popd &> /dev/null

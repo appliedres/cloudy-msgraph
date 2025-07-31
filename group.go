@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/appliedres/cloudy"
-	"github.com/appliedres/cloudy/models"
-	cloudymodels "github.com/appliedres/cloudy/models"
 	abstractions "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/groups"
 	graphmodels "github.com/microsoftgraph/msgraph-sdk-go/models"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/models"
+	cloudymodels "gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/models"
 )
 
 func init() {

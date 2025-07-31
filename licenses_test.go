@@ -4,8 +4,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/appliedres/cloudy"
-	"github.com/appliedres/cloudy/testutil"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/testutil"
 )
 
 func TestLicenseManager(t *testing.T) {

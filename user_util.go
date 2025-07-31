@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appliedres/cloudy"
-	cloudymodels "github.com/appliedres/cloudy/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
+	cloudymodels "gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/models"
 )
 
 /*

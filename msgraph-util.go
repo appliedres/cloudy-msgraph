@@ -3,8 +3,8 @@ package cloudymsgraph
 import (
 	"context"
 
-	"github.com/appliedres/cloudy"
 	"github.com/microsoftgraph/msgraph-sdk-go/models/odataerrors"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
 )
 
 const BadRequest = "Request_BadRequest"

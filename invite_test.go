@@ -3,11 +3,11 @@ package cloudymsgraph
 import (
 	"testing"
 
-	cloudymodels "github.com/appliedres/cloudy/models"
+	cloudymodels "gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/models"
 
-	"github.com/appliedres/cloudy"
-	"github.com/appliedres/cloudy/testutil"
 	"github.com/stretchr/testify/assert"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/testutil"
 )
 
 func TestInviteManager(t *testing.T) {

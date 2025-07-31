@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appliedres/cloudy"
-	cloudymodels "github.com/appliedres/cloudy/models"
-	"github.com/appliedres/cloudy/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
+	cloudymodels "gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/models"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/testutil"
 
-	_ "github.com/appliedres/cloudy-azure"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	_ "gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy-azure"
 )
 
 func TestUserManager(t *testing.T) {

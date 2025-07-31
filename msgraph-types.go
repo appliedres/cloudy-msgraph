@@ -9,10 +9,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/appliedres/cloudy"
 	"github.com/microsoft/kiota-abstractions-go/serialization"
 	msauth "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
 )
 
 const MsGraphName = "msgraph"

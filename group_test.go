@@ -4,9 +4,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/appliedres/cloudy"
-	"github.com/appliedres/cloudy/testutil"
 	"github.com/stretchr/testify/assert"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy"
+	"gitlab.arkloud.dev/arkloud/arkloud-portal/cloudy/testutil"
 )
 
 func TestGroupManager(t *testing.T) {
